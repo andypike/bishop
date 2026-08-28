@@ -1,4 +1,4 @@
-# bishop
+# Bishop - Not bad for a human.
 
 A Claude Code plugin for working Linear tickets in Ruby on Rails codebases: read the ticket, investigate the code, clarify the approach before writing anything, implement in small reviewed TDD batches (on a per-ticket branch, with a commit after each reviewed slice), then run a quality gate (tests, RuboCop, RubyCritic, mutation testing, style guide, code review) and a correctness-vs-ticket check before calling it done.
 
