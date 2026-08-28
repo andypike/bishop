@@ -36,3 +36,7 @@ Once shared with the team, install from a marketplace:
 ```
 
 Then in a session, just name a ticket: "let's work on ENG-1234."
+
+## Iterating on the plugin
+
+Edits to any plugin file (`SKILL.md`, agents, references, style guide) aren't picked up automatically in a running session. After making changes, run `/reload-plugins` — this reloads skills, agents, hooks, and MCP/LSP servers live, without restarting the session.
