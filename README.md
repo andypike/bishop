@@ -14,7 +14,8 @@ See `skills/ticket-workflow/SKILL.md` for the full workflow.
 ## What's in here
 
 - `skills/ticket-workflow/SKILL.md` — the staged workflow.
-- `agents/correctness-checker.md` — subagent that checks the final diff against the original ticket and decision log.
+- `agents/correctness-checker.md` — subagent that checks the final diff against the original ticket and decision log. Runs on Opus at high effort.
+- `agents/code-review-runner.md` — subagent that runs the built-in `code-review` skill against the diff. Also runs on Opus at high effort, so review quality doesn't depend on the main session's model.
 - `style-guide/rails-style-guide.md` — the style guide this workflow enforces, applied the same way across every project. Seeded from thoughtbot's Rails AI rules, edited to taste. Tune it whenever code review surfaces a preference that isn't written down yet — that's how review overhead goes down over time.
 - `references/quality-gates.md` — exact commands and how baseline-vs-after comparison works for each tool.
 - `references/docker.md` — detecting the Docker Compose setup and wrapping every command to run inside the container.

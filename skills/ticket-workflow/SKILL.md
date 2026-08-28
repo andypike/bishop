@@ -70,7 +70,7 @@ Follow `references/quality-gates.md` exactly for commands and interpretation. In
 - RuboCop: auto-fix safe offenses (`-a`, never `-A`), report what's left. Offense count must not exceed baseline.
 - RubyCritic: score must not regress vs baseline.
 - Evilution: mutation testing scoped to just the changed files/lines. No baseline comparison (nothing to mutate before the change existed) — judge survivors on their own merits.
-- `code-review` skill: run it against the diff for reuse/simplification/efficiency findings.
+- Invoke the `code-review-runner` agent (via the Agent tool) against the diff for reuse/simplification/efficiency findings — runs the `code-review` skill on Opus at high effort, rather than calling the skill directly in the main session.
 - Style guide checklist: walk the diff against `style-guide/rails-style-guide.md`.
 
 **Gate**: report baseline-vs-after plus all findings to the user. If anything needs fixing, loop back into Phase 5 for that fix (small batch, reviewed), then re-run the affected checks — don't re-run everything from scratch unless the fix was broad.
