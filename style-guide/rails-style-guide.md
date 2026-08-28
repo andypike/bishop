@@ -1,4 +1,4 @@
-# Rails Style Guide
+uld# Rails Style Guide
 
 This is the single style guide `bishop` applies across every project it's used on — not one guide per codebase. It's a living document: tune it whenever a code review surfaces something you'd rather see written differently. As it matures, you should need to review less and less by hand.
 
@@ -80,10 +80,13 @@ Some projects predate this guide and won't meet it. That's expected — the goal
 - Every branch in a conditional must have at least one spec.
 - Use `build` / `build_stubbed` over `create` unless persistence is needed.
 - Factories: only required attributes with sensible defaults. Start in `spec/factories.rb`.
-- Simple explicit model validation testing per attribute
+- Simple explicit behavioral model validation testing per attribute, avoid shoulda testing even if installed.
 - WebMock blocks all external HTTP in tests — always stub external requests.
-- Never test private methods directly. Never stub the system under test.
+- Never test private methods directly. Never stub the system under test
 
+- Do not add tests to check associations exist, this will be covered implicitly by other tests
+- Use a named subject (`subject(:record) { build(:record) }`), never a bare `subject` — reference the name in every example instead of repeating the build line. Build any dependency the examples need to control via an explicit `let`, not inline.
+- Model validation specs: always start with one baseline example (`it('is valid with valid attributes') { expect(record).to be_valid }`), then group the rest under a nested `describe '#attribute_name'` block per attribute. Assert only that an error is present for the attribute (`expect(record.errors[:attribute]).to be_present`) — never match the exact error message text, which couples the test to copy rather than behavior.
 ## Views & Presenters
 
 - Views render data. No calculations, queries, or complex conditionals.
