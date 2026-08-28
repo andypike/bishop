@@ -91,10 +91,15 @@ Invoke the `correctness-checker` agent (via the Agent tool) once the quality gat
 
 ## Phase 8 — Final Linear update
 
-Post a final comment on the ticket summarizing:
+Post a final comment on the ticket — this is the permanent record of what shipped and what it took to get there, not just a "done" notice. Include:
 
-- What was implemented.
-- Quality metrics before/after (tests, RuboCop, RubyCritic, mutation score).
-- The correctness check's verdict.
+- **What was implemented.** Brief.
+- **Quality metrics before/after**: tests (example count, pass/fail, coverage), RuboCop, RubyCritic, mutation score. If Phase 6 ran more than once (a fix loop), report the final numbers, not the first pass.
+- **Code review findings**, grouped by outcome, not just "see above" — the review is often where the real bugs surface, and that's easy to lose if it's not written down:
+  - Fixed (what was wrong, in one line each).
+  - Added — decisions made *during* review that expanded scope (e.g. a missing action the review exposed as necessary).
+  - Rejected — findings checked and found inaccurate, with what was actually verified (a hallucinated claim caught by reading the real source is worth recording so the pattern is visible later).
+  - Already-approved — anything the review flagged that was in fact a decision made earlier in the ticket; note this so the record doesn't look like a contradiction.
+- **The correctness check's verdict** — including a second pass if the first one found gaps. A correctness check that finds nothing is worth stating explicitly ("no gaps found"), not omitting.
 
 Branching and per-slice commits happened in Phase 5; pushing and opening the PR remain manual, left to the user.
