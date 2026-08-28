@@ -57,7 +57,7 @@ This is the core loop, and it must stay small-batch — **never write the whole 
 1. Pick the smallest next slice of behavior (one method, one branch, one scenario — not "the whole feature").
 2. Write failing test(s) for *only* that slice, following the Testing section of the style guide.
 3. **Gate**: present the test(s) to the user for review before implementing anything. Wait for approval or feedback.
-4. Implement the minimal code to make those tests pass — simplest correct implementation, not the final polished version.
+4. Implement the minimal code to make those tests pass — simplest correct implementation, not the final polished version. Follow the style guide at `style-guide/rails-style-guide.md`
 5. **Gate**: present the implementation for review.
 6. **Gate**: ask whether to commit this slice. If approved, re-check the branch (per `git.md`) and commit with a short, specific message.
 7. Repeat from step 1 until the ticket's behavior is covered.
