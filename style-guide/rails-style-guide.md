@@ -87,6 +87,8 @@ Some projects predate this guide and won't meet it. That's expected — the goal
 - Do not add tests to check associations exist, this will be covered implicitly by other tests
 - Use a named subject (`subject(:record) { build(:record) }`), never a bare `subject` — reference the name in every example instead of repeating the build line. Build any dependency the examples need to control via an explicit `let`, not inline.
 - Model validation specs: always start with one baseline example (`it('is valid with valid attributes') { expect(record).to be_valid }`), then group the rest under a nested `describe '#attribute_name'` block per attribute. Assert only that an error is present for the attribute (`expect(record.errors[:attribute]).to be_present`) — never match the exact error message text, which couples the test to copy rather than behavior.
+- Feature specs: use plain Capybara commands (`visit`, `fill_in`, `click_button`, `expect(page).to have_...`) directly in the body of each example. No page objects, no Given/When/Then-style private helper methods — the point is to read top-to-bottom in one place, not jump between indirection layers. Use `let`/`let!` to share setup across examples instead of repeating it.
+
 ## Views & Presenters
 
 - Views render data. No calculations, queries, or complex conditionals.
