@@ -1,6 +1,6 @@
 # bishop
 
-A Claude Code plugin for working Linear tickets in Ruby on Rails codebases: read the ticket, investigate the code, clarify the approach before writing anything, implement in small reviewed TDD batches, then run a quality gate (tests, RuboCop, RubyCritic, mutation testing, style guide, code review) and a correctness-vs-ticket check before calling it done.
+A Claude Code plugin for working Linear tickets in Ruby on Rails codebases: read the ticket, investigate the code, clarify the approach before writing anything, implement in small reviewed TDD batches (on a per-ticket branch, with a commit after each reviewed slice), then run a quality gate (tests, RuboCop, RubyCritic, mutation testing, style guide, code review) and a correctness-vs-ticket check before calling it done.
 
 See `skills/ticket-workflow/SKILL.md` for the full workflow.
 
@@ -19,6 +19,7 @@ See `skills/ticket-workflow/SKILL.md` for the full workflow.
 - `style-guide/rails-style-guide.md` — the style guide this workflow enforces, applied the same way across every project. Seeded from thoughtbot's Rails AI rules, edited to taste. Tune it whenever code review surfaces a preference that isn't written down yet — that's how review overhead goes down over time.
 - `references/quality-gates.md` — exact commands and how baseline-vs-after comparison works for each tool.
 - `references/docker.md` — detecting the Docker Compose setup and wrapping every command to run inside the container.
+- `references/git.md` — branch naming (`<TICKET-ID>_brief_summary`) and per-slice commit conventions. Pushing and PRs stay manual.
 
 ## Using it in a project
 

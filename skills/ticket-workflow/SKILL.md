@@ -12,6 +12,7 @@ Two reference files this workflow depends on, kept in this plugin so they're con
 - [`style-guide/rails-style-guide.md`](../../style-guide/rails-style-guide.md) — what good code looks like here. Applies in Phase 5 (implementation) and Phase 6 (quality gate).
 - [`references/quality-gates.md`](../../references/quality-gates.md) — exact commands, baseline mechanics, and how each tool is interpreted. Read this before running any check.
 - [`references/docker.md`](../../references/docker.md) — every project runs inside Docker Compose; this covers detecting the compose setup and how to wrap every command. Read this before running anything at all, including the baseline capture.
+- [`references/git.md`](../../references/git.md) — branch naming and per-slice commit conventions. Read this before Phase 5 — nothing gets written until the branch is settled.
 
 ## Phase 1 — Ticket intake
 
@@ -49,6 +50,8 @@ Collect the baseline results (should be done or close to it by now) for comparis
 
 ## Phase 5 — TDD implementation, small batches
 
+**Before anything else in this phase** — not even a test file — settle the branch per `references/git.md`: check the current branch matches `<TICKET-ID>_*`; if not, gate on whether to create it now (off an up-to-date root branch).
+
 This is the core loop, and it must stay small-batch — **never write the whole test suite up front**. For each slice:
 
 1. Pick the smallest next slice of behavior (one method, one branch, one scenario — not "the whole feature").
@@ -56,7 +59,8 @@ This is the core loop, and it must stay small-batch — **never write the whole 
 3. **Gate**: present the test(s) to the user for review before implementing anything. Wait for approval or feedback.
 4. Implement the minimal code to make those tests pass — simplest correct implementation, not the final polished version.
 5. **Gate**: present the implementation for review.
-6. Repeat from step 1 until the ticket's behavior is covered.
+6. **Gate**: ask whether to commit this slice. If approved, re-check the branch (per `git.md`) and commit with a short, specific message.
+7. Repeat from step 1 until the ticket's behavior is covered.
 
 If the user's review feedback implies a style guide gap (something they correct that isn't written down), suggest adding it to `style-guide/rails-style-guide.md` — that's how review burden goes down over time.
 
@@ -93,4 +97,4 @@ Post a final comment on the ticket summarizing:
 - Quality metrics before/after (tests, RuboCop, RubyCritic, mutation score).
 - The correctness check's verdict.
 
-Git and PR steps are out of scope for this workflow — leave branching, committing, pushing, and opening the PR to the user.
+Branching and per-slice commits happened in Phase 5; pushing and opening the PR remain manual, left to the user.
