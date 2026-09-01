@@ -13,7 +13,7 @@ Before running anything, check the target project for:
 - `rubycritic` in Gemfile.
 - `evilution` in Gemfile.
 
-If any of RuboCop, RubyCritic, or Evilution is missing, **stop and ask** Andy before adding it as a dev dependency — don't silently modify the Gemfile.
+If any of RuboCop, RubyCritic, or Evilution is missing, **stop and ask** the developer before adding it as a dev dependency — don't silently modify the Gemfile.
 
 ## Baseline capture (kicked off in background during Investigation/Q&A)
 
@@ -45,4 +45,4 @@ Mutation testing is **not** part of the baseline — there's no diff yet to muta
 - **`code-review` skill**: run for reuse/simplification/efficiency findings on the diff.
 - **Style guide checklist**: walk the changed files against `style-guide/rails-style-guide.md`.
 
-Report all of the above — baseline vs after, plus the mutation score and any survivors — to Andy before moving to the correctness check.
+Report all of the above — baseline vs after, plus the mutation score and any survivors — to the developer before moving to the correctness check.

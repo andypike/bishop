@@ -28,7 +28,6 @@ Some projects predate this guide and won't meet it. That's expected — the goal
 - Controllers handle HTTP only: receive request, delegate to model or command object, return response.
 - Avoid long actions, since they often signal business logic that belongs in a model or command object.
 - No business logic, calculations, email sending, or multi-object operations in controllers.
-
 - Prefer RESTful routes. Custom verb actions (e.g., `post "activate"`) usually mean a missing noun/resource (e.g., `resource :trial, only: [:create]`).
 
 ## Database & Migrations
@@ -38,10 +37,10 @@ Some projects predate this guide and won't meet it. That's expected — the goal
 - Add `null: false` and database-level defaults where appropriate.
 - Wrap multi-record operations in transactions. Use `save!` (bang) inside transactions.
 - Keep scopes as one-liners. Complex queries belong in search/query objects.
-- When querying for a list, prefer pagination to unbound result sets.
+- When querying for a list of ActiveRecord models do not return unbound result sets. Prefer pagination or fixed limited result size.
 - Avoid `.count` in loops, use `counter_cache`.
-
 - Avoid SELECT N+1 querying.
+
 ## Models & Domain Objects
 
 - All domain classes live in `app/models/` including ActiveRecord models and POROs.
@@ -51,7 +50,6 @@ Some projects predate this guide and won't meet it. That's expected — the goal
 - Encapsulate logic in small private methods within the command so the `#call` method reads as a list of operations
 - Name classes after domain nouns, not actions. No `*Service`, `*Manager`, `*Handler` suffixes.
 - Use `ActiveModel::Model` for POROs that need validation or form integration.
-
 - Look to identify domain models that can be extracted when an existing model is large.
 - Callbacks only for data integrity (normalise fields, set defaults). Never for emails, payments, or external systems.
 - Prefer composition over inheritance. Extract behaviour into small, focused objects.
@@ -73,7 +71,6 @@ Some projects predate this guide and won't meet it. That's expected — the goal
 ## Testing
 
 - Must use TDD. Write tests first and follow red, green, refactor.
-
 - Test behaviour, not implementation. Four Phase Test: setup, exercise, verify, teardown.
 - Test pyramid: many model/PORO unit specs, some request specs, few system specs.
 - Every public method on every model and PORO must have at least one spec.
@@ -83,10 +80,10 @@ Some projects predate this guide and won't meet it. That's expected — the goal
 - Simple explicit behavioral model validation testing per attribute, avoid shoulda testing even if installed.
 - WebMock blocks all external HTTP in tests — always stub external requests.
 - Never test private methods directly. Never stub the system under test
-
 - Do not add tests to check associations exist, this will be covered implicitly by other tests
 - Use a named subject (`subject(:record) { build(:record) }`), never a bare `subject` — reference the name in every example instead of repeating the build line. Build any dependency the examples need to control via an explicit `let`, not inline.
-- Model validation specs: always start with one baseline example (`it('is valid with valid attributes') { expect(record).to be_valid }`), then group the rest under a nested `describe '#attribute_name'` block per attribute. Assert only that an error is present for the attribute (`expect(record.errors[:attribute]).to be_present`) — never match the exact error message text, which couples the test to copy rather than behavior.
+- Don't pass an explicit `type:` (e.g. `type: :model`) to `RSpec.describe` — RSpec infers it from the spec's directory location (`spec/models/`, `spec/requests/`, etc.), and an explicit type is redundant. Exception: a project-defined custom type used purely to hook into a spec-support module (e.g. a `:presenter` type that includes a `mock_view` helper for `spec/components/**/*_presenter_spec.rb`) isn't inferred from the directory and must stay explicit — check `config.include ..., type: :something` in spec support before assuming a directory-based type applies.
+- Model validation specs: always start with one baseline example (`it('is valid with valid attributes') { expect(record).to be_valid }`), then group the rest under a nested `describe '#attribute_name'` block per attribute. Assert only that an error is present for the attribute (`expect(record.errors[:attribute]).to be_present`) — never match the exact error message text, which couples the test to copy rather than behaviour.
 - Feature specs: use plain Capybara commands (`visit`, `fill_in`, `click_button`, `expect(page).to have_...`) directly in the body of each example. No page objects, no Given/When/Then-style private helper methods — the point is to read top-to-bottom in one place, not jump between indirection layers. Use `let`/`let!` to share setup across examples instead of repeating it.
 
 ## Views & Presenters

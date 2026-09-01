@@ -4,7 +4,7 @@ Every project this workflow runs against lives inside a Docker container managed
 
 ## Detect the setup (part of Phase 2 — Investigation)
 
-1. **Find the compose file**: `docker-compose.yml` / `docker-compose.yaml` / `compose.yml` at the project root (or wherever the ticket's project lives). If there isn't one, stop — this project isn't containerized the way Andy described, and the wrapping below doesn't apply. Ask before assuming anything.
+1. **Find the compose file**: `docker-compose.yml` / `docker-compose.yaml` / `compose.yml` at the project root (or wherever the ticket's project lives). If there isn't one, stop — this project isn't containerized, and the wrapping below doesn't apply. Ask before assuming anything.
 2. **Pick the CLI**: prefer the `docker compose` v2 plugin; fall back to the standalone `docker-compose` binary if v2 isn't available.
    ```bash
    docker compose version >/dev/null 2>&1 && echo "docker compose" || echo "docker-compose"
@@ -17,7 +17,7 @@ Every project this workflow runs against lives inside a Docker container managed
   ```bash
   docker compose exec <service> <command>
   ```
-- If it's not running, don't require Andy to start it first — use a one-off container instead:
+- If it's not running, don't require the developer to start it first — use a one-off container instead:
   ```bash
   docker compose run --rm <service> <command>
   ```
