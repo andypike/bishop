@@ -18,7 +18,7 @@ Nothing gets written — not even a test file — until this is settled:
 3. Otherwise, **gate**: ask the developer whether to create the ticket branch now.
 4. If approved:
    - Check for uncommitted changes (`git status`). If there are any, stop and ask rather than switching branches or losing them.
-   - Determine the root branch: prefer `main`, fall back to `master` (check `git show-ref --verify --quiet refs/heads/main`, or the remote default via `git symbolic-ref refs/remotes/origin/HEAD`).
+   - Determine the root branch: prefer `main`, fall back to `master`, check for epic branch for large feature work (check `git show-ref --verify --quiet refs/heads/main`, or the remote default via `git symbolic-ref refs/remotes/origin/HEAD`).
    - Update the root branch so the new branch starts from current code:
      ```bash
      git fetch origin <root-branch>
