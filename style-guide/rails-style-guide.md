@@ -84,7 +84,11 @@ Some projects predate this guide and won't meet it. That's expected — the goal
 - Use a named subject (`subject(:record) { build(:record) }`), never a bare `subject` — reference the name in every example instead of repeating the build line. Build any dependency the examples need to control via an explicit `let`, not inline.
 - Don't pass an explicit `type:` (e.g. `type: :model`) to `RSpec.describe` — RSpec infers it from the spec's directory location (`spec/models/`, `spec/requests/`, etc.), and an explicit type is redundant. Exception: a project-defined custom type used purely to hook into a spec-support module (e.g. a `:presenter` type that includes a `mock_view` helper for `spec/components/**/*_presenter_spec.rb`) isn't inferred from the directory and must stay explicit — check `config.include ..., type: :something` in spec support before assuming a directory-based type applies.
 - Model validation specs: always start with one baseline example (`it('is valid with valid attributes') { expect(record).to be_valid }`), then group the rest under a nested `describe '#attribute_name'` block per attribute. Assert only that an error is present for the attribute (`expect(record.errors[:attribute]).to be_present`) — never match the exact error message text, which couples the test to copy rather than behaviour.
+- Feature specs target elements by a dedicated `qa-` prefixed class (`qa-license-row`, `qa-license-status`), never by a styling class. A `qa-` class carries no styles — not now, not later. That is the whole point: restyling must never break a spec, and a spec must never pin a design decision in place. Add a `qa-` hook when you need one rather than reaching for a nearby BEM or utility class, and if you find a spec leaning on a styling class, convert it.
 - Feature specs: use plain Capybara commands (`visit`, `fill_in`, `click_button`, `expect(page).to have_...`) directly in the body of each example. No page objects, no Given/When/Then-style private helper methods — the point is to read top-to-bottom in one place, not jump between indirection layers. Use `let`/`let!` to share setup across examples instead of repeating it.
+- Feature specs: any record that has to appear on the page must exist *before* `visit` — use `let!`, or create it in the example body above the `visit`. A lazy `let` referenced for the first time inside the assertion (or inside a selector helper) is only created after the page has rendered, so the page was built without it and the example fails with a misleading "unable to find" error rather than a wrong-value one. If RuboCop then flags `RSpec/LetSetup` on that `let!`, the fix is to reference the record by name in the example (`have_unchecked_field(other_usage.title)`) rather than by a duplicated magic string — the cop is pointing at a real disconnect between the fixture and the assertion.
+- Feature specs run under `rack_test`, which reads the DOM but applies no stylesheet. It honours the `hidden` attribute and inline `display: none`, and treats `<template>` contents as invisible, but knows nothing about CSS classes. So toggle visibility with the `hidden` attribute rather than a class when a spec needs to see the difference — and remember that a purely CSS-level bug (an author `display` rule overriding `[hidden]`, say) cannot be caught by these specs at all.
+- Capybara reports a text field with no `value` attribute as `nil`, not `""`, so `have_field(name, with: '')` never matches an empty Rails input. Assert `find_field(name).value` is `blank?` instead.
 
 ## Views & Presenters
 
@@ -93,6 +97,12 @@ Some projects predate this guide and won't meet it. That's expected — the goal
 - Extract repeated markup into partials. Pass data via `locals:`, not instance variables.
 - Helpers for simple formatting only (dates, currencies). If longer than 5 lines, use a presenter.
 - Turbo: return `status: :unprocessable_entity` on failed forms. Keep Stimulus controllers small
+
+## Linting
+
+- A RuboCop offence is a signal to change the code, not the configuration. Never silence a cop with an inline `rubocop:disable` to get a clean run. Editing `.rubocop.yml` is a project-wide decision to raise with the developer, not something to do mid-ticket.
+- Unused method arguments take an underscore prefix (`def list_path(_parameters)`), never a `Lint/UnusedMethodArgument` disable. This comes up most in the abstract methods of a template-method base class, where the signature is the contract a subclass implements — keep the argument, mark it unused.
+- The rare genuine exception gets an inline disable *with* a comment saying why, and is narrowed to the smallest possible span — a single line where possible, never a whole file.
 
 ## Quality gate philosophy
 
