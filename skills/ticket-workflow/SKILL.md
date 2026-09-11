@@ -16,7 +16,18 @@ Two reference files this workflow depends on, kept in this plugin so they're con
 
 ## Phase 1 — Ticket intake
 
-Fetch the ticket via whatever Linear MCP tools are available in this session (search/get issue by identifier). Pull title, description, acceptance criteria, and existing comments. If the ticket reference is ambiguous or not found, ask rather than guessing which ticket was meant.
+Fetch the ticket via whatever Linear MCP tools are available in this session (search/get issue by identifier). Pull title, description, acceptance criteria, **status**, and existing comments. If the ticket reference is ambiguous or not found, ask rather than guessing which ticket was meant.
+
+**Check the status before going further.** A status of **Rejected** means the ticket was already implemented once and then failed QA or client review — it's a rework, not a fresh build:
+
+- Read the comments for the rejection reasons. There may be several rounds if the ticket has been rejected more than once; treat every still-outstanding reason as in scope, not just the most recent one.
+- Rejection feedback can legitimately change the original scope — new or revised requirements, not only bug fixes. Where feedback and the original description conflict, the feedback wins; note that explicitly in the Phase 3 decision log.
+- Work out what's already built versus what the rejections ask for. The job from here is that delta, not a re-implementation of the whole ticket.
+- The original work has most likely already been merged into a feature or root branch (that's how someone came to be testing it), so the rework gets a **new** branch — `<TICKET-ID>_feedback_<summary>`, never the original ticket branch. See `references/git.md`.
+
+Carry the rejection reasons forward: they're part of what Phase 7 checks correctness against, and Phase 8 should record which rejections were addressed.
+
+For any other status, continue with the phases below as written.
 
 ## Phase 2 — Investigation
 
@@ -50,7 +61,7 @@ Collect the baseline results (should be done or close to it by now) for comparis
 
 ## Phase 5 — TDD implementation, small batches
 
-**Before anything else in this phase** — not even a test file — settle the branch per `references/git.md`: check the current branch matches `<TICKET-ID>_*`; if not, gate on whether to create it now (off an up-to-date root branch).
+**Before anything else in this phase** — not even a test file — settle the branch per `references/git.md`: check the current branch matches `<TICKET-ID>_*` (or `<TICKET-ID>_feedback_*` for a rejected ticket); if not, gate on whether to create it now (off an up-to-date root branch).
 
 This is the core loop, and it must stay small-batch — **never write the whole test suite up front**. For each slice:
 
