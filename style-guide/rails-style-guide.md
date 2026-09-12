@@ -1,4 +1,4 @@
-uld# Rails Style Guide
+# Rails Style Guide
 
 This is the single style guide `bishop` applies across every project it's used on — not one guide per codebase. It's a living document: tune it whenever a code review surfaces something you'd rather see written differently. As it matures, you should need to review less and less by hand.
 
@@ -97,6 +97,18 @@ Some projects predate this guide and won't meet it. That's expected — the goal
 - Extract repeated markup into partials. Pass data via `locals:`, not instance variables.
 - Helpers for simple formatting only (dates, currencies). If longer than 5 lines, use a presenter.
 - Turbo: return `status: :unprocessable_entity` on failed forms. Keep Stimulus controllers small
+
+## User-facing Copy
+
+- Every string a user reads lives in `config/locales/en.yml` and is fetched with `I18n.t`. Never a Ruby constant. `NOTHING_SELECTED = 'Select some artwork before creating a reservation.'` at the top of a command looks tidy and isn't — it scatters the product's voice across dozens of class files, so nobody can review the wording in one place, and it hard-codes English into classes that have no business knowing the locale.
+- This applies wherever the string is authored: controllers (flash messages), commands (error messages), models (validation and blocking reasons), presenters (labels, statuses, empty-state text), and views. A constant is the wrong home in all of them.
+- Constants stay constants when the user never reads them: numbers and limits, arrays and symbol lists, SQL fragments and scope conditions, session keys, CSS class names, enum and column values, file paths, class-name strings. The test is "would a copy change touch this?", not "is it a string?".
+- Mirror the class path under a layer namespace so a key is findable from the code and vice versa: `controllers.<controller_path>.<key>`, `commands.<class_path>.<key>`, `models.<class_path>.<key>`, `presenters.<class_path>.<key>`. Group a related set under a sub-key (`models.client_portal/reservation_defaults.blocking_reasons.no_team`).
+- Fetch the translation at the point of use, in a small private method named for the message (`def read_only_message`), rather than memoising it into a constant at load time — a constant freezes the lookup before the locale is known.
+- Where several messages share one scope, pass `scope:` and a symbol key (`I18n.t(key, scope: 'presenters.foo/bar_presenter')`) instead of repeating the full dotted path in every method.
+- Check the project for an existing translation helper before adding a raw `I18n.t` — a `t_controller`-style private method on a base controller is common. If one base class has it and a sibling base class doesn't, extract the helper into a shared concern rather than duplicating it or reaching for the long key.
+- When a message is needed in two places (a command refusing the action and a controller guarding against it), expose one public method on the class that owns the message and call it from the other. Don't let a second class learn the first one's translation key, and never duplicate the text.
+- Specs assert the literal user-visible text (`expect(command.errors).to include("We haven't assigned a team to your company yet.")`), not `I18n.t` with the same key. A missing key resolves to the same "Translation missing" string on both sides of the expectation, so a key-based assertion passes even when the translation was never added.
 
 ## Linting
 
