@@ -49,6 +49,7 @@ Some projects predate this guide and won't meet it. That's expected — the goal
 - Commands are simple PORO classes with a `#call` method.
 - Encapsulate logic in small private methods within the command so the `#call` method reads as a list of operations
 - Name classes after domain nouns, not actions. No `*Service`, `*Manager`, `*Handler` suffixes.
+- Predicate methods — any method returning true or false — end in a question mark.
 - Use `ActiveModel::Model` for POROs that need validation or form integration.
 - Look to identify domain models that can be extracted when an existing model is large.
 - Callbacks only for data integrity (normalise fields, set defaults). Never for emails, payments, or external systems.
