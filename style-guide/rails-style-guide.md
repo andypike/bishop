@@ -101,8 +101,8 @@ Some projects predate this guide and won't meet it. That's expected — the goal
 
 ## User-facing Copy
 
-- Every string a user reads lives in `config/locales/en.yml` and is fetched with `I18n.t`. Never a Ruby constant. `NOTHING_SELECTED = 'Select some artwork before creating a reservation.'` at the top of a command looks tidy and isn't — it scatters the product's voice across dozens of class files, so nobody can review the wording in one place, and it hard-codes English into classes that have no business knowing the locale.
-- This applies wherever the string is authored: controllers (flash messages), commands (error messages), models (validation and blocking reasons), presenters (labels, statuses, empty-state text), and views. A constant is the wrong home in all of them.
+- User facing strings can be hardcoded into views if that is the convention of the project.
+- Strings a user reads should not be stored in Ruby classes such as controllers (flash messages), commands (error messages), models (validation and blocking reasons), presenters (labels, statuses, empty-state text). They should live in `config/locales/en.yml` and is fetched with `I18n.t`. Never a Ruby constant.
 - Constants stay constants when the user never reads them: numbers and limits, arrays and symbol lists, SQL fragments and scope conditions, session keys, CSS class names, enum and column values, file paths, class-name strings. The test is "would a copy change touch this?", not "is it a string?".
 - Mirror the class path under a layer namespace so a key is findable from the code and vice versa: `controllers.<controller_path>.<key>`, `commands.<class_path>.<key>`, `models.<class_path>.<key>`, `presenters.<class_path>.<key>`. Group a related set under a sub-key (`models.client_portal/reservation_defaults.blocking_reasons.no_team`).
 - Fetch the translation at the point of use, in a small private method named for the message (`def read_only_message`), rather than memoising it into a constant at load time — a constant freezes the lookup before the locale is known.
