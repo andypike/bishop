@@ -33,14 +33,26 @@ Mutation testing is **not** part of the baseline — there's no diff yet to muta
 - **Evilution (mutation testing)** — scoped to only the files/lines changed for this ticket, since we care about coverage of the change, not the whole file history:
 
   ```bash
+  # One invocation per target range — see "Evilution pitfalls" below
   docker compose exec <service> bundle exec evilution run \
-    <changed-file>:<start-line>-<end-line> [...] \
+    <changed-file>:<method-start-line>-<method-end-line> \
+    --spec <own_spec.rb>,<caller_spec.rb> \
     --format json --min-score 0.8
   ```
 
-  - Build the `file:line-range` args from the actual diff hunks for this ticket.
+  - Use the diff hunks for this ticket to find *which methods* changed, then widen each range to whole methods (see pitfalls below).
   - `--min-score` is a starting point (0.8), not a hard rule — use judgement per ticket; the real bar is "no unreasonable survivors in the code we just wrote." Read `survived[]` in the JSON output and treat each as a genuine gap to close with a test, not noise to suppress.
   - Exit code 0 = met threshold, 1 = below threshold, 2 = tool error (parse failure, bad config) — don't treat exit 2 as a quality failure, treat it as a bug to fix or report.
+
+  **Evilution pitfalls.** Each of these produces a confident score over work that never happened, so a clean result is not trustworthy until they've been ruled out:
+
+  - **Run it strictly alone.** Evilution mutates source files on disk while it runs. The test suite, RuboCop, RubyCritic or a review agent running at the same time will see half-mutated code and report nonsense. Finish every other check first, and never background Evilution beside another task.
+  - **Ranges must enclose whole methods.** A line or range that only partly covers a method produces no mutations for it — silently, with `score: 1.0`. Widen each range from `def` to `end`; don't pass diff hunk lines directly.
+  - **One range per file per invocation.** Passing the same file twice (`foo.rb:16-30 foo.rb:38-42`) silently keeps only the **last** range for that file. Either widen to one range covering all changed methods in the file, or run one invocation per range.
+  - **Pass `--spec` explicitly.** Evilution picks the spec by name convention (`app/models/foo.rb` → `spec/models/foo_spec.rb`) and runs nothing else. Code covered by a caller's spec (feature, request, integration, list/query object specs) then reports false survivors or false `neutral`s. Pass `--spec a_spec.rb,b_spec.rb` with every spec that pins the behaviour. `--spec` applies to the whole invocation, which is another reason to run one invocation per target. A stderr line `No matching test found for <file>, running full suite` means that target contributed nothing.
+  - **Read `neutral[]` and `unresolved`, not just `survived[]`.** The score ignores `neutral`, and some genuinely uncaught mutations land there. Sort each neutral mutation into "can't change behaviour" (e.g. `size`→`length`) or "real gap, needs a spec". A neutral with 0 killed and 0 survived means nothing exercised those lines at all.
+  - **Verify the mutated lines.** After every run, compare the line numbers in the JSON's `killed` + `survived` against the methods you asked for. A requested method with zero mutations means one of the pitfalls above hit — fix the invocation and re-run.
+  - **ActiveRecord models with an `enum` can't be mutated.** Evilution reloads the file per mutation and Rails raises on the duplicate enum definition. Every mutation errors, or `total` comes back 0, and the score reads 0.0. That's a tool failure, not a quality regression: check `total` before reading anything into a 0.0, and fall back to behavioural specs plus hand-mutating the code to confirm a spec fails.
 
 - **`code-review` skill**: run for reuse/simplification/efficiency findings on the diff.
 - **Style guide checklist**: walk the changed files against `style-guide/rails-style-guide.md`.
