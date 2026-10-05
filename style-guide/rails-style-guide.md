@@ -4,6 +4,11 @@ This is the single style guide `bishop` applies across every project it's used o
 
 Seeded from thoughtbot's Rails AI rules (https://github.com/thoughtbot/guides/tree/main/rails/ai-rules/rules), then edited to taste below. Treat everything here as a starting point to argue with, not gospel.
 
+## General guidance
+
+- Prefer readability over complexity.
+- Extract variables and methods where required to improve readability.
+
 ## Working in codebases that don't already follow this
 
 Some projects predate this guide and won't meet it. That's expected — the goal is to raise quality as you go, not to block on a codebase's starting point. Two rules when touching existing code:
