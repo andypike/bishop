@@ -1,6 +1,6 @@
 {
   "name": "bishop",
-  "description": "Ticket-driven Rails workflow: read a Linear ticket, clarify the approach, implement in small TDD batches, and run a structured quality gate (tests, RuboCop, RubyCritic, mutation testing, style guide, correctness-vs-ticket check) before calling it done.",
+  "description": "Ticket-driven Rails workflow: break a new feature into vertical-slice Linear tickets, then work each ticket \u2014 read it, clarify the approach, implement in small TDD batches, and run a structured quality gate (tests, RuboCop, RubyCritic, mutation testing, style guide, correctness-vs-ticket check) before calling it done.",
   "version": "0.1.0",
   "author": {
     "name": "Andy Pike",

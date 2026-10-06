@@ -18,6 +18,8 @@ Two reference files this workflow depends on, kept in this plugin so they're con
 
 Fetch the ticket via whatever Linear MCP tools are available in this session (search/get issue by identifier). Pull title, description, acceptance criteria, **status**, and existing comments. If the ticket reference is ambiguous or not found, ask rather than guessing which ticket was meant.
 
+If the ticket links to a feature document (tickets created by the `feature-planning` skill do), read it too — it holds the wider feature context and cross-ticket decisions. Treat it as background: this ticket's own description, acceptance criteria, and comments define the scope.
+
 **Check the status before going further.** A status of **Rejected** means the ticket was already implemented once and then failed QA or client review — it's a rework, not a fresh build:
 
 - Read the comments for the rejection reasons. There may be several rounds if the ticket has been rejected more than once; treat every still-outstanding reason as in scope, not just the most recent one.
