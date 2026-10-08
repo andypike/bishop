@@ -1,0 +1,83 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "additionalDirectories": ["~/.bishop"],
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "Skill",
+      "Agent",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push -u origin *)",
+      "Bash(git fetch *)",
+      "Bash(docker compose *)",
+      "Bash(docker-compose *)",
+      "Bash(gh pr create *)",
+      "Bash(gh pr view *)",
+      "Bash(gh pr list *)",
+      "mcp__claude_ai_Linear__get_issue",
+      "mcp__claude_ai_Linear__list_issues",
+      "mcp__claude_ai_Linear__list_comments",
+      "mcp__claude_ai_Linear__save_comment",
+      "mcp__claude_ai_Linear__save_issue",
+      "mcp__claude_ai_Linear__list_issue_labels",
+      "mcp__claude_ai_Linear__get_document",
+      "mcp__claude_ai_Linear__list_documents",
+      "mcp__claude_ai_Linear__get_project"
+    ],
+    "deny": [
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git push --force-with-lease *)",
+      "Bash(git push * --force*)",
+      "Bash(git push * -f *)",
+      "Bash(git push * --delete *)",
+      "Bash(git push * *:*)",
+      "Bash(git push * epic/*)",
+      "Bash(git push * main)",
+      "Bash(git push * master)",
+      "Bash(git checkout *)",
+      "Bash(git switch *)",
+      "Bash(git reset --hard *)",
+      "Bash(git rebase *)",
+      "Bash(git worktree *)",
+      "Bash(docker compose down*)",
+      "Bash(docker compose * down*)",
+      "Bash(docker compose * stop*)",
+      "Bash(docker compose * kill*)",
+      "Bash(docker compose * rm *)",
+      "Bash(docker volume rm *)",
+      "Bash(docker system prune*)",
+      "Bash(gh pr merge *)",
+      "Bash(gh api *)",
+      "Bash(gh repo *)",
+      "mcp__claude_ai_Linear__delete_comment",
+      "mcp__claude_ai_Linear__delete_attachment"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "excludedCommands": [
+      "gh *",
+      "git add *",
+      "git commit *",
+      "git push *",
+      "git fetch *",
+      "docker *",
+      "docker-compose *"
+    ],
+    "filesystem": {
+      "allowWrite": ["~/.bishop"]
+    },
+    "network": {
+      "allowUnixSockets": [
+        "/var/run/docker.sock",
+        "~/.orbstack/run/docker.sock",
+        "~/.docker/run/docker.sock"
+      ]
+    }
+  }
+}
