@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Starts one auto mode worker in the background and returns at once.
+# Used by the orchestrate skill.
+#
+# Usage: start-worker <worktree> <ticket state dir> <plugin root> [<session id>]
+#
+# Without a session id, starts a new worker from <state dir>/prompt.md.
+# With one, resumes that session from <state dir>/resume-prompt.md.
+set -euo pipefail
+
+if [ $# -lt 3 ]; then
+  echo "usage: start-worker <worktree> <ticket state dir> <plugin root> [<session id>]" >&2
+  exit 64
+fi
+
+worktree=$1
+state_dir=$2
+plugin_root=$3
+session_id=${4:-}
+
+if [ -n "$session_id" ]; then
+  prompt_file=$state_dir/resume-prompt.md
+  resume_args=(--resume "$session_id")
+else
+  prompt_file=$state_dir/prompt.md
+  resume_args=()
+fi
+
+if [ ! -f "$prompt_file" ]; then
+  echo "start-worker: missing $prompt_file" >&2
+  exit 66
+fi
+
+run=1
+while [ -e "$state_dir/run-$run.json" ]; do
+  run=$((run + 1))
+done
+
+cd "$worktree"
+nohup claude -p "$(cat "$prompt_file")" ${resume_args[@]+"${resume_args[@]}"} \
+  --plugin-dir "$plugin_root" \
+  --settings "$plugin_root/settings/worker.json" \
+  --output-format json \
+  < /dev/null > "$state_dir/run-$run.json" 2> "$state_dir/run-$run.stderr" &
+
+echo $! > "$state_dir/pid"
+echo "started run $run (pid $!)"

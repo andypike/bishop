@@ -57,6 +57,8 @@ The Linear document created in the project, linked from every ticket.
 ```markdown
 # <Feature name>
 
+Epic branch: epic/<feature_snake_name>
+
 ## Summary
 
 What the feature is, who it's for, and why — from the brief.
