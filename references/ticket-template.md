@@ -8,7 +8,7 @@ The structure `feature-planning` uses for each ticket it creates and for the fea
 - **A single task.** One branch, one reviewable PR, one `ticket-workflow` run. If the acceptance criteria describe two independent things a user could do, it's probably two tickets.
 - **Thin first.** The first slice is the narrowest working path through the feature (happy path, one role, minimal fields). Later slices add variations, edge cases, and polish on top.
 - **No layer-only tickets by default.** Don't split out "add the migration" or "build the model" on their own — fold the schema a slice needs into that slice. The exception is genuinely standalone groundwork that is large or risky on its own (e.g. a backfill on a big table, a new external integration) — call it out as such and agree it with the user.
-- **Self-contained.** It makes sense without reading the feature document; it links to that document for wider context.
+- **Self-contained.** It makes sense without reading the feature document; it links to that document for wider context, and to the architecture document for the shared design it builds against.
 - **Blocked-by only when real.** Add a dependency only when one ticket can't be built without the other already existing — not just because it's later in the working order.
 
 ## Ticket description
@@ -21,6 +21,7 @@ Use this structure for the Linear issue description (markdown). Omit a section o
 Why this ticket exists and where it fits in the feature, in two or three sentences.
 
 Part of: [<Feature document title>](<feature document URL>)
+Architecture: [<Feature name> — Architecture](<architecture document URL>)
 
 ## Gaps
 
@@ -41,6 +42,7 @@ What the user (or system) can do once this ships. Plain language, specific — r
 
 ## Technical notes
 
+- The architecture components this ticket introduces or uses, by their names in the architecture document.
 - Relevant existing files, models, and patterns found during investigation.
 - Risks or open questions to settle during this ticket's own clarification phase.
 - Guidance, not a prescribed implementation — the approach is decided when the ticket is worked.
@@ -58,6 +60,7 @@ The Linear document created in the project, linked from every ticket.
 # <Feature name>
 
 Epic branch: epic/<feature_snake_name>
+Architecture: [<Feature name> — Architecture](<architecture document URL>)
 
 ## Summary
 

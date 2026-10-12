@@ -2,7 +2,7 @@
 
 A Claude Code plugin for working Linear tickets in Ruby on Rails codebases: read the ticket, investigate the code, clarify the approach before writing anything, implement in small reviewed TDD batches (on a per-ticket branch, with a commit after each reviewed slice), then run a quality gate (tests, RuboCop, RubyCritic, mutation testing, style guide, code review) and a correctness-vs-ticket check before calling it done.
 
-Before that, it can also help plan a new feature: give it a detailed brief plus any supporting material (docs, files, prototypes, meeting notes), and it investigates the codebase, proposes vertical-slice tickets, fleshes them out with you one at a time, and creates them in a Linear project — ready to work one by one.
+Before that, it can also help plan a new feature: give it a detailed brief plus any supporting material (docs, files, prototypes, meeting notes), and it investigates the codebase, proposes vertical-slice tickets, fleshes them out with you one at a time, designs the feature's architecture with you (following the style guide, with diagrams), and creates it all in a Linear project — ready to work one by one or in parallel.
 
 Tickets can be worked interactively, with a developer reviewing each step, or in **auto mode**: an orchestrator works through a Linear project's released tickets with headless agents in parallel, one git worktree and one set of databases per ticket. The agent stops for a developer only to approve its plan, when something genuinely needs a decision, or when a quality check still fails after two retries. It then opens a PR for review. Linear is the dashboard: ticket statuses and an `agent` label group show where every ticket is and which ones need a developer.
 
@@ -17,7 +17,7 @@ See `skills/feature-planning/SKILL.md` and `skills/ticket-workflow/SKILL.md` for
 
 ## What's in here
 
-- `skills/feature-planning/SKILL.md` — breaks a new feature down into Linear tickets (with blocked-by relations and a feature document in the project).
+- `skills/feature-planning/SKILL.md` — breaks a new feature down into Linear tickets (with blocked-by relations, a feature document, and an architecture document in the project).
 - `skills/ticket-workflow/SKILL.md` — the staged workflow for working a single ticket.
 - `agents/correctness-checker.md` — subagent that checks the final diff against the original ticket and decision log. Runs on Opus at high effort.
 - `agents/code-review-runner.md` — subagent that runs the built-in `code-review` skill against the diff. Also runs on Opus at high effort, so review quality doesn't depend on the main session's model.
@@ -25,6 +25,7 @@ See `skills/feature-planning/SKILL.md` and `skills/ticket-workflow/SKILL.md` for
 - `references/quality-gates.md` — exact commands and how baseline-vs-after comparison works for each tool.
 - `references/docker.md` — detecting the Docker Compose setup and wrapping every command to run inside the container, including the per-worker container and databases used in auto mode.
 - `references/ticket-template.md` — the ticket and feature document structure `feature-planning` writes, and what makes a ticket a good single slice.
+- `references/architecture.md` — the feature's architecture document: what it settles, how it's built from the style guide, its Mermaid diagrams, and how tickets follow it.
 - `references/git.md` — the epic branch, ticket branches (`<TICKET-ID>_brief_summary`), per-slice commits, pushing, and opening the PR. Merging stays with the developer.
 - `references/agent-status.md` — auto mode's Linear statuses and `agent` labels: what each means, who sets it, and how a developer responds.
 - `references/escalation.md` — when an auto mode agent stops for a developer, and what its Linear comments contain.
@@ -81,7 +82,7 @@ Linear links a PR to its ticket from the ticket ID in the branch name (`ENG-123_
 
 ### Planning for auto mode
 
-Run `feature-planning` from inside the project's repo. It creates the Linear project, the feature document and its epic branch, and the tickets. Tickets are created without the `agent:claimable` label: a developer releases each one to agents by moving it to Todo and adding `agent:claimable`.
+Run `feature-planning` from inside the project's repo. It creates the Linear project, the feature document and its epic branch, the architecture document, and the tickets. Auto mode won't start on a project without an architecture document, because agents working in parallel build against it; for a project planned before that existed, ask `feature-planning` to add one. Tickets are created without the `agent:claimable` label: a developer releases each one to agents by moving it to Todo and adding `agent:claimable`.
 
 ### Running auto mode
 
