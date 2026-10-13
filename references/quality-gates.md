@@ -40,8 +40,20 @@ Mutation testing is **not** part of the baseline — there's no diff yet to muta
     <changed-file>:<method-start-line>-<method-end-line> \
     --spec <own_spec.rb>,<caller_spec.rb> \
     --example-targeting coverage \
+    --jobs 4 --warmup rails --incremental -t 60 \
     --format json --min-score 0.8
   ```
+
+  Add `--integration minitest` on a Minitest project.
+
+  **Speed.** Mutation testing is usually the slowest check, so the command runs it in parallel and skips work it has already done:
+
+  - **`--jobs 4`** runs four mutations at once. Each runs in its own forked process, with the mutation applied in memory. If parallel workers trip over the shared test database, Evilution marks those mutations `neutral` with `infra_error` and re-runs them one at a time, so the score stays honest. A large `summary.infra_retried` means contention, not a coverage problem: drop to `--jobs 2` for that project.
+  - **`--warmup rails`** loads Rails' locales, routes and asset paths once, instead of in every forked mutation.
+  - **`--incremental`** caches killed mutations and skips them on a re-run while the source is unchanged. After adding tests to kill survivors, re-run the same command: only the survivors (and any mutations in source you changed) run again. The cache is keyed on the source code, not the tests, so if a fix rewrote or removed tests, re-run with `--no-incremental` in place of `--incremental` to ignore the cache.
+  - **`-t 60`** caps each mutation at 60 seconds, so one that loops forever can't stall the gate. It's reported as `timed_out`.
+
+  These settings are new and unmeasured on real tickets: record the run's `summary.duration`, `total` and `infra_retried` alongside the score, so they can be tuned.
 
   - Use the diff hunks for this ticket to find *which methods* changed, then widen each range to whole methods (see pitfalls below).
   - `--min-score` is a starting point (0.8), not a hard rule — use judgement per ticket; the real bar is "no unreasonable survivors in the code we just wrote." Read `survived[]` in the JSON output and treat each as a genuine gap to close with a test, not noise to suppress.
