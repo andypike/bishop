@@ -40,6 +40,8 @@
       "mcp__claude_ai_Linear__get_project",
       "mcp__claude_ai_Linear__list_documents",
       "mcp__claude_ai_Linear__get_document",
+      "mcp__claude_ai_Linear__save_document",
+      "Bash(gh pr view *)",
       "mcp__claude_ai_Linear__list_teams"
     ],
     "deny": [

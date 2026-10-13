@@ -111,6 +111,7 @@ Only after this loop is quality-gate work appropriate — don't run RuboCop, Rub
 - **Branch**: the orchestrator created the worktree on the ticket branch, so only verify it — `git branch --show-current` matches the expected name. If it doesn't, park with `agent:needs-input`; never create or switch branches yourself.
 - **Slices** come from the approved plan, in order. Each slice runs steps 1, 2, 4 and 6 without the gates: write the failing test and watch it go red, implement until it's green, then commit (re-check the branch, stage only this slice's files).
 - **Escalation**: check every slice against the triggers in `references/escalation.md`, and post the slice's assumptions before moving on.
+- **Deployment tasks**: when a slice adds something that must run at deploy time — a migration, a rake or data task, a new environment variable — add it to `<state dir>/deployment-tasks.md` in that slice, following "Deployment tasks" in `references/ticket-template.md`. Keep the file even when it's empty: write `None` so the orchestrator can tell "nothing needed" from "not recorded".
 
 ## Phase 6 — Quality gate
 
@@ -160,11 +161,15 @@ Post a final comment on the ticket — this is the permanent record of what ship
   - Already-approved — anything the review flagged that was in fact a decision made earlier in the ticket; note this so the record doesn't look like a contradiction.
 - **The correctness check's verdict** — including a second pass if the first one found gaps. A correctness check that finds nothing is worth stating explicitly ("no gaps found"), not omitting.
 - **Architecture changes** — any approved departure from the architecture document, and whether the document has been updated. Omit when there were none.
+- **Deployment tasks** — every command this ticket needs run at deploy time (migrations, rake tasks, anything beyond deploying the code), one per line, per "Deployment tasks" in `references/ticket-template.md`. "None" when there are none.
 
 Then **gate**: ask whether to push the branch and open the PR. If approved, follow the push and PR steps in `references/git.md`; otherwise both stay with the user.
 
+If the ticket has deployment tasks and a feature document, offer to add them to its **Deployment tasks** section once the PR is merged.
+
 **Auto mode:**
 
-1. Push the branch and open the PR against the epic branch, per `references/git.md`. The PR body carries the same record as the final comment, plus every assumption from the ticket.
-2. Post the final comment under a `**🤖 Agent — Complete**` heading, with the PR link at the top.
-3. Swap the label to `agent:pr-open` and exit. Linear moves the ticket to In Review when the PR opens; the orchestrator posts token usage after this run ends.
+1. Check `<state dir>/deployment-tasks.md` against the diff: every migration and new rake task in it is listed, and the file says `None` if there are none. Never edit the feature document — the orchestrator adds the list there when the PR merges.
+2. Push the branch and open the PR against the epic branch, per `references/git.md`. The PR body carries the same record as the final comment, plus every assumption from the ticket.
+3. Post the final comment under a `**🤖 Agent — Complete**` heading, with the PR link at the top.
+4. Swap the label to `agent:pr-open` and exit. Linear moves the ticket to In Review when the PR opens; the orchestrator posts token usage after this run ends.

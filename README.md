@@ -96,7 +96,7 @@ claude --settings /path/to/bishop/settings/orchestrator.json
 /loop 5m /bishop:orchestrate "<Linear project name>"
 ```
 
-Add `max_workers: <n>` after the project name to change how many agents run at once (default 2). The first tick runs preflight and asks you to confirm the Linear GitHub automation; after that, keep the session open and work from Linear. Filter the project by the `agent:awaiting-approval`, `agent:needs-input`, `agent:gate-failed` and `agent:error` labels, plus the In Review status, to see what needs you.
+Add `max_workers: <n>` after the project name to change how many agents run at once (default 2). The first tick runs preflight and asks you to confirm the Linear GitHub automation; after that, keep the session open and work from Linear. As tickets merge, the orchestrator adds each one's deployment tasks (migrations, rake tasks, anything else to run at deploy time) to the **Deployment tasks** section of the feature document, without duplicates, so the list is ready when you deploy the epic. Filter the project by the `agent:awaiting-approval`, `agent:needs-input`, `agent:gate-failed` and `agent:error` labels, plus the In Review status, to see what needs you.
 
 The orchestrator stops its loop by itself once every ticket in the project is in QA, Done or Canceled and its worktrees and databases are cleaned up. If a ticket is rejected after that, start it again.
 

@@ -83,4 +83,22 @@ What the feature is, who it's for, and why — from the brief.
 ## Out of scope / deferred
 
 - Everything explicitly left out of this feature, so it isn't lost.
+
+## Deployment tasks
+
 ```
+None yet.
+```
+```
+
+### Deployment tasks
+
+Everything that has to be run when the feature's merged work is deployed: database migrations, rake tasks, data backfills, and any other step beyond deploying the code. It's one deduplicated list for the whole feature, built up as tickets merge, so whoever deploys runs it top to bottom.
+
+- **One command per line**, written as it runs on the deployed app (`bin/rails db:migrate`), never with a Docker or worker prefix. A step that isn't a command (a new environment variable or credential) is one short line saying what to set, without its value.
+- **No duplicates.** A line already in the list isn't added again. `bin/rails db:migrate` appears once, however many tickets add migrations.
+- **Order.** `bin/rails db:migrate` comes first, since other tasks usually depend on the schema; everything else follows in the order tickets merged.
+- **Only merged work.** A ticket's tasks are added when it reaches QA or Done, not when its PR opens: an unmerged PR has nothing to deploy.
+- **After a deploy**, the developer removes the lines that were run. A later ticket adds a command again if it needs it again.
+
+In auto mode only the orchestrator writes this section (see `skills/orchestrate/SKILL.md`): workers run in parallel, and one writer means no edit overwrites another. Workers record their own ticket's tasks instead, per `skills/ticket-workflow/SKILL.md`.
