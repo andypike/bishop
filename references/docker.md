@@ -57,7 +57,7 @@ The orchestrator works out a **worker prefix** for the project at preflight and 
 docker compose -p <project> -f <main checkout>/<compose file> run --rm \
   [--entrypoint <binary>] \
   -v <worktree>:<app dir> \
-  -v <main checkout>/.git:<main checkout>/.git \
+  -v <main checkout>/.git:<main checkout>/.git:ro \
   -e <dev db var>=<dev db name>_<ticket> -e <test db var>=<test db name>_<ticket> \
   <service> [<command prefix>] <command>
 ```
@@ -68,12 +68,12 @@ For example — a fictitious project, `acme/shop`, checked out at `/home/dev/cod
 docker compose -p shop -f /home/dev/code/shop/docker-compose.yml run --rm \
   --entrypoint bundle \
   -v /home/dev/.bishop/shop/worktrees/ENG-123:/usr/src/app \
-  -v /home/dev/code/shop/.git:/home/dev/code/shop/.git \
+  -v /home/dev/code/shop/.git:/home/dev/code/shop/.git:ro \
   -e SHOP_DB_DATABASE=shop_development_eng123 -e SHOP_TEST_DB_DATABASE=shop_test_eng123 \
   web exec rails test TEST=test/helpers/price_helper_test.rb
 ```
 
-Both sides of the `.git` mount are the same absolute path.
+Both sides of the `.git` mount are the same absolute path, and it's read-only (`:ro`).
 
 ### Working out the prefix (orchestrator, at preflight)
 
@@ -82,7 +82,7 @@ Each part has a reason; skip one and the worker silently runs the wrong code or 
 1. **Project name (`-p`)** — the developer's existing stack, so the worker shares its services instead of Compose starting a second stack named after the worktree directory. Use the name in `docker compose ls`, or the prefix on the project's volumes in `docker volume ls`; it defaults to the main checkout's directory name.
 2. **Compose files (`-f`)** — the main checkout's files, given explicitly, because the worker runs from the worktree. Leave out any file that mounts the app's code through a named or external volume (for example a `docker-sync` override such as `shop_sync:/usr/src/app`): that volume mirrors the developer's checkout and would hide the worktree. A plain bind mount of the checkout (`.:/app`) can stay: the worker's own `-v <worktree>:/app` replaces it.
 3. **App dir** — where the code lives in the container: the target of the app service's code mount, or the `Dockerfile`'s final `WORKDIR`.
-4. **`.git` mount** — a worktree's `.git` is a file pointing at `<main checkout>/.git/worktrees/<name>`. Mounting the main `.git` at the same absolute path makes git work inside the container, which Evilution's diff scoping needs.
+4. **`.git` mount** — a worktree's `.git` is a file pointing at `<main checkout>/.git/worktrees/<name>`. Mounting the main `.git` at the same absolute path makes git work inside the container, which Evilution's diff scoping needs. Mount it **read-only**: reading (`git diff`, `log`, `status`) works, but nothing in the container can move a branch — the main checkout's `.git` holds every branch, `main`/`master` included, and the worker's permission rules don't reach inside the container. Commits happen on the host, where those rules apply.
 5. **Entrypoint** — if the image's entrypoint script lives on a volume the worker doesn't mount (for example an entrypoint provided by the same sync volume), override it: `--entrypoint bundle` with `exec` as the command prefix. Test the plain form first and override only if it fails.
 6. **Database names** — find how `config/database.yml` picks each environment's database name:
    - `<%= ENV['SOME_VAR'] %>` → pass that variable, with the ticket ID appended to its usual value (lowercase: `shop_test_eng123`);
