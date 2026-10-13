@@ -20,6 +20,8 @@ Two reference files this workflow depends on, kept in this plugin so they're con
 - **Interactive** (default) — a developer is in the session, and every gate below pauses for them.
 - **Auto** — started headless by the orchestrator, which passes `mode: auto`, the ticket ID, the worktree path (already on the ticket branch, cut from the epic), and a **state directory** for files that must outlive this run. Nobody is in the session to answer, so each gate becomes either a logged assumption or **parking** the ticket. Read [`references/agent-status.md`](../../references/agent-status.md) and [`references/escalation.md`](../../references/escalation.md) before Phase 1. Each phase below says what changes under **Auto mode**; where it says nothing, the phase runs as written.
 
+In auto mode, create a Linear document only when the ticket asks for one as a deliverable, and say in the final comment which documents you created. Never edit an existing document — the feature document belongs to the orchestrator, the architecture document to the developer (see `references/architecture.md`). Reading any document is fine.
+
 ### Resuming in auto mode
 
 The orchestrator resumes a parked worker once its label is `agent:plan-approved` or `agent:answered`. Read every comment since your most recent agent parking comment — they are the developer's binding response — then continue from where you parked. If you start without your earlier context (a fresh session rather than a resumed one), rebuild it first from the ticket's agent comments (plan, decisions, assumptions), the branch's commits, and the state directory.

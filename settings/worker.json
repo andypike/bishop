@@ -24,6 +24,7 @@
       "mcp__claude_ai_Linear__save_issue",
       "mcp__claude_ai_Linear__list_issue_labels",
       "mcp__claude_ai_Linear__get_document",
+      "mcp__claude_ai_Linear__save_document",
       "mcp__claude_ai_Linear__list_documents",
       "mcp__claude_ai_Linear__get_project"
     ],
