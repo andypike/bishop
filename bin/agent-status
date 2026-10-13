@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+# Shows where each auto mode worker has got to, refreshing until Ctrl-C.
+# Reads the progress.md and pid files the orchestrator and workers keep in
+# their ticket state directories; it never calls Linear or changes anything.
+#
+# Usage: agent-status [<state dir>] [-n <seconds>] [--all] [--once]
+#
+#   <state dir>  ~/.bishop (default), one repo's folder, or one project's folder
+#   -n           seconds between refreshes (default 10)
+#   --all        also show tickets that have been cleaned up
+#   --once       print once and exit
+set -euo pipefail
+
+root=$HOME/.bishop
+interval=10
+show_all=false
+once=false
+quiet_after=1200 # seconds without progress before a running worker is flagged
+
+while [ $# -gt 0 ]; do
+  case $1 in
+    -n) interval=$2; shift 2 ;;
+    --all) show_all=true; shift ;;
+    --once) once=true; shift ;;
+    -h|--help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -*) echo "agent-status: unknown option $1" >&2; exit 64 ;;
+    *) root=${1%/}; shift ;;
+  esac
+done
+
+if [ ! -d "$root" ]; then
+  echo "agent-status: no such directory $root" >&2
+  exit 66
+fi
+
+if [ -t 1 ]; then
+  bold=$'\033[1m' dim=$'\033[2m' green=$'\033[32m' yellow=$'\033[33m'
+  red=$'\033[31m' reset=$'\033[0m'
+else
+  bold='' dim='' green='' yellow='' red='' reset=''
+fi
+
+mtime() {
+  stat -f %m "$1" 2>/dev/null || stat -c %Y "$1"
+}
+
+ago() {
+  local s=$1
+  if [ "$s" -lt 60 ]; then echo "${s}s"
+  elif [ "$s" -lt 3600 ]; then echo "$((s / 60))m"
+  elif [ "$s" -lt 86400 ]; then echo "$((s / 3600))h$(( (s % 3600) / 60 ))m"
+  else echo "$((s / 86400))d"
+  fi
+}
+
+# Ticket state dirs: any folder holding a progress.md or a pid file.
+ticket_dirs() {
+  find "$root" -maxdepth 4 \( -name progress.md -o -name pid \) -type f \
+    -not -path '*/worktrees/*' 2>/dev/null |
+    sed 's|/[^/]*$||' | sort -u
+}
+
+# "<repo> / <project>" relative to the root, or the root's own name when the
+# root is a single project's folder.
+project_name() {
+  local rel=${1#"$root"/}
+  local project=${rel%/*}
+  [ "$project" = "$rel" ] && project=${root##*/}
+  echo "${project//\// / }"
+}
+
+render() {
+  local now cols width dir project last_project='' ticket line age_s state colour
+  local shown=0 running=0
+  now=$(date +%s)
+  cols=$(tput cols 2>/dev/null || echo 120)
+  width=$((cols - 31))
+  [ "$width" -lt 20 ] && width=20
+
+  printf '%sAgent status%s  %s  %s(every %ss, Ctrl-C to quit)%s\n\n' \
+    "$bold" "$reset" "$(date +%H:%M:%S)" "$dim" "$interval" "$reset"
+
+  while IFS= read -r dir; do
+    ticket=${dir##*/}
+    line='' age_s=''
+    if [ -s "$dir/progress.md" ]; then
+      line=$(tail -n 1 "$dir/progress.md")
+      age_s=$((now - $(mtime "$dir/progress.md")))
+    fi
+
+    if [ -f "$dir/pid" ] && kill -0 "$(cat "$dir/pid")" 2>/dev/null; then
+      state=running colour=$green
+      running=$((running + 1))
+      if [ -n "$age_s" ] && [ "$age_s" -gt "$quiet_after" ]; then
+        state=quiet colour=$yellow
+      fi
+    elif [ -f "$dir/pid" ]; then
+      state=exited colour=$red
+    else
+      case $line in *'· Cleaned up'*) $show_all || continue ;; esac
+      state=stopped colour=$dim
+    fi
+
+    project=$(project_name "$dir")
+    if [ "$project" != "$last_project" ]; then
+      [ -n "$last_project" ] && echo
+      printf '%s%s%s\n' "$bold" "$project" "$reset"
+      last_project=$project
+    fi
+
+    line=${line#* · } # drop the time: the age column says when
+    [ -z "$line" ] && line='(no progress logged yet)'
+    [ "${#line}" -gt "$width" ] && line="${line:0:$((width - 1))}…"
+    printf '  %-10s %s%-8s%s %6s  %s\n' "$ticket" "$colour" "$state" "$reset" \
+      "${age_s:+$(ago "$age_s")}" "$line"
+    shown=$((shown + 1))
+  done < <(ticket_dirs)
+
+  if [ "$shown" -eq 0 ]; then
+    printf '%sNo agents to show.%s\n' "$dim" "$reset"
+  fi
+  printf '\n%s%s running · quiet = no progress for %sm · exited = stopped, not yet reaped by the orchestrator%s\n' \
+    "$dim" "$running" "$((quiet_after / 60))" "$reset"
+}
+
+if $once; then
+  render
+  exit 0
+fi
+
+trap 'tput cnorm 2>/dev/null; exit 0' INT TERM
+tput civis 2>/dev/null || true
+while true; do
+  frame=$(render)
+  printf '\033[H\033[2J%s\n' "$frame"
+  sleep "$interval"
+done

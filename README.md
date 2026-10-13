@@ -34,6 +34,7 @@ See `skills/feature-planning/SKILL.md` and `skills/ticket-workflow/SKILL.md` for
 - `settings/worker.json` — permissions and sandbox rules for headless auto mode agents.
 - `settings/orchestrator.json` — permissions for the orchestrator's session.
 - `bin/start-worker` — starts or resumes one auto mode agent in the background.
+- `bin/agent-status` — a live view of where each auto mode agent is, from the progress logs they keep.
 
 ## Using it in a project
 
@@ -97,6 +98,12 @@ claude --settings /path/to/bishop/settings/orchestrator.json
 ```
 
 Add `max_workers: <n>` after the project name to change how many agents run at once (default 2). The first tick runs preflight and asks you to confirm the Linear GitHub automation; after that, keep the session open and work from Linear. As tickets merge, the orchestrator adds each one's deployment tasks (migrations, rake tasks, anything else to run at deploy time) to the **Deployment tasks** section of the feature document, without duplicates, so the list is ready when you deploy the epic. Filter the project by the `agent:awaiting-approval`, `agent:needs-input`, `agent:gate-failed` and `agent:error` labels, plus the In Review status, to see what needs you.
+
+To see where each running agent is (its phase, slice, or quality check), run this in another terminal. It refreshes itself every 10 seconds, and flags an agent that has logged nothing for 20 minutes as `quiet`:
+
+```bash
+/path/to/bishop/bin/agent-status        # all projects; or pass one repo's or project's folder under ~/.bishop
+```
 
 The orchestrator stops its loop by itself once every ticket in the project is in QA, Done or Canceled and its worktrees and databases are cleaned up. If a ticket is rejected after that, start it again.
 

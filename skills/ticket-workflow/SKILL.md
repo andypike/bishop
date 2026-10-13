@@ -22,6 +22,25 @@ Two reference files this workflow depends on, kept in this plugin so they're con
 
 In auto mode, create a Linear document only when the ticket asks for one as a deliverable, and say in the final comment which documents you created. Never edit an existing document — the feature document belongs to the orchestrator, the architecture document to the developer (see `references/architecture.md`). Reading any document is fine.
 
+### Progress log
+
+In auto mode, keep `<state dir>/progress.md` up to date so the developer can see where you are at any moment (`bin/agent-status` shows each ticket's latest line). Append one line **as each step begins or ends**, with a single shell command:
+
+```bash
+echo "$(date +%H:%M) · Phase 5 · slice 3/7 CSV export of prices · green" >> <state dir>/progress.md
+```
+
+Each line is the time, the phase, then what's happening, separated by ` · `. Append only; never rewrite earlier lines. Log:
+
+- **Each phase as it starts**: `Phase 2 · Investigation · started`.
+- **Baseline**: when it starts and when it's done.
+- **Each slice** in Phase 5: started (its number out of the total, and its name), red, green, committed.
+- **Each quality gate check** in Phase 6, before it runs and with its result: `Phase 6 · Evilution · running`, then `Phase 6 · Evilution · 94% (3 survivors)`. Log a retry as `Phase 6 · retry 1/2`.
+- **The correctness check** in Phase 7: running, then its result.
+- **Every exit**: `Parked · agent:needs-input · <the question, in a few words>`, or `PR opened · <PR URL>`.
+
+Log before any command that could run for minutes, so the line's age shows how long it has been running.
+
 ### Resuming in auto mode
 
 The orchestrator resumes a parked worker once its label is `agent:plan-approved` or `agent:answered`. Read every comment since your most recent agent parking comment — they are the developer's binding response — then continue from where you parked. If you start without your earlier context (a fresh session rather than a resumed one), rebuild it first from the ticket's agent comments (plan, decisions, assumptions), the branch's commits, and the state directory.

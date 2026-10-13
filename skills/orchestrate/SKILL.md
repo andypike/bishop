@@ -48,6 +48,13 @@ Everything the orchestrator knows between ticks is in Linear or on disk, never i
       pid                           PID of the running worker, while one runs
       baseline.md, pr-body.md, …    written by the worker itself
       deployment-tasks.md           the ticket's deploy-time commands, written by the worker
+      progress.md                   one line per step, appended by the worker and the orchestrator
+```
+
+`progress.md` is what `bin/agent-status` shows. The worker's lines are defined in the ticket-workflow skill's "Progress log" section; the orchestrator appends its own, in the same format, at claim, resume and clean-up:
+
+```bash
+echo "$(date +%H:%M) · Claimed · <ticket branch>" >> <ticket state dir>/progress.md
 ```
 
 `<repo>` is the repo's name on GitHub; `<project-slug>` is the Linear project's name in lowercase snake_case.
@@ -98,7 +105,7 @@ For each ticket that has a `worker.md` not yet marked cleaned up, and whose Line
 4. Delete the local ticket branch: `git branch -D <ticket branch>`.
 5. Drop the worker's databases, per "Cleaning up" in `references/docker.md`.
 6. Remove the ticket's `agent:*` label (`removeLabels` only — there's nothing to swap to).
-7. Mark `worker.md` cleaned up. Keep the ticket folder: its run logs are the record of what happened.
+7. Mark `worker.md` cleaned up and append `Cleaned up · <status>` to `progress.md`. Keep the ticket folder: its run logs are the record of what happened.
 
 A ticket cleaned up after QA can come back as Rejected and be claimed again; that claim starts a new worktree, branch, and session, and the run numbering carries on.
 
@@ -109,7 +116,8 @@ Skip this step while the project is paused. A ticket needs resuming when its lab
 1. Write `resume-prompt.md` for the reason:
    - **Developer responded**: `<TICKET-ID>'s label is now <label>. Resume in auto mode per the ticket-workflow skill's "Resuming in auto mode" section: read every comment posted since your last parking comment, apply them, and continue.`
    - **After a crash or usage limit**: `Your previous run stopped before finishing (<reason>). Resume in auto mode where you left off: check the branch's commits and your comments on the ticket for what's already done, then continue.`
-2. Start the worker with its session ID.
+2. Append `Resumed · <label, or crash / usage limit>` to `progress.md`.
+3. Start the worker with its session ID.
 
 If the session can't be resumed (the run ends at once with an error saying the conversation wasn't found), start a fresh worker from `prompt.md` instead, with this line added at the top: `You are resuming work on this ticket in a fresh session: rebuild your context first, per the skill's "Resuming in auto mode" section.`
 
@@ -123,7 +131,7 @@ Skip this step while the project is paused or no slot is free.
    1. **Claim it** — one `save_issue` call that sets the status to In Progress and swaps `agent:claimable` for `agent:planning`. If the swap fails, someone changed the ticket in the meantime: skip it this tick.
    2. **Name the branch** per `references/git.md`, summarising the ticket's title. For a Rejected ticket, use the `_feedback_` form, summarising what the developer's rejection comments ask for.
    3. **Create the worktree** from the epic branch, per the auto mode section of `references/git.md`, and copy in the files listed in `project.md`. Create any per-worker databases `project.md` lists for the orchestrator to create (see `references/docker.md`).
-   4. **Write `worker.md` and `prompt.md`**, from the template below.
+   4. **Write `worker.md` and `prompt.md`**, from the template below, and append `Claimed · <ticket branch>` to `progress.md`.
    5. **Start the worker.**
 
 ### Worker prompt
