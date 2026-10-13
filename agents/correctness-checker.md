@@ -13,6 +13,7 @@ You will be given, in the prompt that invokes you:
 - The original Linear ticket (title, description, acceptance criteria, comments).
 - The decision log from the planning Q&A (clarifications, scope calls, chosen approach).
 - The set of files changed for this ticket (a diff, or a list of paths plus a base ref to diff against).
+- The feature's architecture document, if the ticket has one: the shared design (data model, component names and layers, which ticket introduces each) that every ticket in the feature builds against.
 
 ## What to do
 
@@ -24,6 +25,7 @@ You will be given, in the prompt that invokes you:
    - Edge cases named in the ticket/decision log that aren't handled.
    - Behavior that technically passes tests but contradicts the ticket's intent (e.g. tests were written to match the code rather than the requirement).
    - Anything implemented that goes beyond what was agreed, which might be scope creep worth flagging rather than silently accepted.
+   - Departures from the architecture document: a component this ticket should introduce that's missing or built under another name or layer, or something another ticket introduces that was re-created here instead of used. A departure the decision log records as approved is not a gap.
 5. Do not fix anything yourself. You report; the human and the main workflow decide what happens next.
 
 ## Output

@@ -6,7 +6,7 @@ This file decides when to stop and ask. A target project's `CLAUDE.md` still gov
 
 ## Assumptions
 
-An **assumption** is a decision the worker made that a reviewer could reasonably have made differently: a naming choice with no precedent, an edge case the ticket is silent on, a default value. Choices the style guide, the approved plan, or an existing codebase pattern already settle are not assumptions — just follow them.
+An **assumption** is a decision the worker made that a reviewer could reasonably have made differently: a naming choice with no precedent, an edge case the ticket is silent on, a default value. Choices the style guide, the architecture document, the approved plan, or an existing codebase pattern already settle are not assumptions — just follow them.
 
 Post assumptions to the ticket as they're made, grouping those from the same slice into one comment:
 
@@ -24,15 +24,16 @@ The approved plan is the contract. A trigger is a **surprise** — something the
 
 1. **Requirements gap** — the acceptance criteria turn out to be missing, ambiguous, or contradictory for the case at hand.
 2. **Design fork** — two or more viable designs with real trade-offs, and the plan didn't choose between them.
-3. **Uncharted decision** — a design decision that neither the style guide, the plan, nor an existing codebase pattern covers, and that a reviewer would likely question if made silently.
+3. **Uncharted decision** — a design decision that neither the style guide, the architecture document, the plan, nor an existing codebase pattern covers, and that a reviewer would likely question if made silently.
 4. **Sensitive change not in the plan** — a migration, data deletion, auth or permissions change, payments change, or public API change.
 5. **Scope drift** — the work needs changes to files or areas well outside those the plan named.
-6. **Plan change** — anything else that would change what the approved plan says will be built.
+6. **Architecture deviation** — the work can't follow the feature's architecture document: a component, table, name, or layer has to differ, or something another ticket introduces is missing or doesn't fit. Never build around the document or edit it (see `references/architecture.md`).
+7. **Plan change** — anything else that would change what the approved plan says will be built.
 
 Two more stops come from the quality checks rather than from judgement:
 
-7. **Quality gate still failing** — after two retries, any Phase 6 check still fails or regresses against baseline. Park with `agent:gate-failed`.
-8. **Correctness gaps remain** — the correctness check still reports gaps after one fix attempt. Park with `agent:needs-input`, quoting the report.
+8. **Quality gate still failing** — after two retries, any Phase 6 check still fails or regresses against baseline. Park with `agent:gate-failed`.
+9. **Correctness gaps remain** — the correctness check still reports gaps after one fix attempt. Park with `agent:needs-input`, quoting the report.
 
 ## Before parking
 

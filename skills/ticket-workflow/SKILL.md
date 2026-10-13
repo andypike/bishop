@@ -13,6 +13,7 @@ Two reference files this workflow depends on, kept in this plugin so they're con
 - [`references/quality-gates.md`](../../references/quality-gates.md) — exact commands, baseline mechanics, and how each tool is interpreted. Read this before running any check.
 - [`references/docker.md`](../../references/docker.md) — every project runs inside Docker Compose; this covers detecting the compose setup and how to wrap every command. Read this before running anything at all, including the baseline capture.
 - [`references/git.md`](../../references/git.md) — epic and ticket branches, per-slice commits, pushing, and opening the PR. Read this before Phase 5 — nothing gets written until the branch is settled.
+- [`references/architecture.md`](../../references/architecture.md) — what the feature's architecture document settles, and how a ticket raises a change to it. Read this in Phase 1 when the ticket links to one.
 
 ## Modes
 
@@ -28,6 +29,8 @@ The orchestrator resumes a parked worker once its label is `agent:plan-approved`
 Fetch the ticket via whatever Linear MCP tools are available in this session (search/get issue by identifier). Pull title, description, acceptance criteria, **status**, and existing comments. If the ticket reference is ambiguous or not found, ask rather than guessing which ticket was meant.
 
 If the ticket links to a feature document (tickets created by the `feature-planning` skill do), read it too — it holds the wider feature context and cross-ticket decisions. Treat it as background: this ticket's own description, acceptance criteria, and comments define the scope.
+
+If it links to an architecture document, read that as well. It isn't background: it's the shared design every ticket in the feature builds against — the data model, component names and layers, and which ticket introduces each — so tickets worked in parallel fit together. Note the components this ticket introduces and the ones it uses from other tickets.
 
 **Check the status before going further.** A status of **Rejected** means the ticket was already implemented once and then failed QA or client review — it's a rework, not a fresh build:
 
@@ -65,14 +68,14 @@ Read-only exploration of the target codebase:
 Work through logic gaps, technical architecture, and order of operations with the user until both of you are confident in the approach. Ask short, specific questions — don't dump a wall of questions at once. Cover:
 
 - Ambiguous or missing requirements in the ticket.
-- Architectural choices (where new code lives, what patterns to follow).
+- Architectural choices (where new code lives, what patterns to follow). Where the architecture document settles one, follow it — the plan uses its names and layers. If the ticket can't be built as it says, raise that here rather than designing around it (see "Changing it" in `references/architecture.md`).
 - Order of operations / sequencing, if the ticket has multiple moving parts.
 
 Keep a running **decision log**: a short bullet list of what was decided and why, including any explicit scope calls ("X is out of scope for this ticket").
 
 **Gate**: don't move to Phase 4 until the user explicitly confirms the plan. Baseline metrics keep running in the background during this phase.
 
-**Auto mode:** there's no Q&A. Draft the plan from the investigation: put every question you would have asked under **Questions**, each with options and a recommendation, and every judgement call under **Assumptions**. Once the baseline is saved, park with the plan-for-approval comment from `references/escalation.md` and `agent:awaiting-approval`. The gate clears when the developer swaps the label to `agent:plan-approved`.
+**Auto mode:** there's no Q&A. Draft the plan from the investigation: put every question you would have asked under **Questions**, each with options and a recommendation, and every judgement call under **Assumptions**. The **Approach** names the architecture components the ticket introduces or uses; any departure from the architecture document goes under **Questions**, never under Assumptions. Once the baseline is saved, park with the plan-for-approval comment from `references/escalation.md` and `agent:awaiting-approval`. The gate clears when the developer swaps the label to `agent:plan-approved`.
 
 ## Phase 4 — Post decisions to Linear
 
@@ -108,6 +111,7 @@ Only after this loop is quality-gate work appropriate — don't run RuboCop, Rub
 - **Branch**: the orchestrator created the worktree on the ticket branch, so only verify it — `git branch --show-current` matches the expected name. If it doesn't, park with `agent:needs-input`; never create or switch branches yourself.
 - **Slices** come from the approved plan, in order. Each slice runs steps 1, 2, 4 and 6 without the gates: write the failing test and watch it go red, implement until it's green, then commit (re-check the branch, stage only this slice's files).
 - **Escalation**: check every slice against the triggers in `references/escalation.md`, and post the slice's assumptions before moving on.
+- **Deployment tasks**: when a slice adds something that must run at deploy time — a migration, a rake or data task, a new environment variable — add it to `<state dir>/deployment-tasks.md` in that slice, following "Deployment tasks" in `references/ticket-template.md`. Keep the file even when it's empty: write `None` so the orchestrator can tell "nothing needed" from "not recorded".
 
 ## Phase 6 — Quality gate
 
@@ -119,6 +123,7 @@ Follow `references/quality-gates.md` exactly for commands and interpretation. In
 - Evilution: mutation testing scoped to just the changed files/lines. No baseline comparison (nothing to mutate before the change existed) — judge survivors on their own merits.
 - Invoke the `code-review-runner` agent (via the Agent tool) against the diff for reuse/simplification/efficiency findings — runs the `code-review` skill on Opus at high effort, rather than calling the skill directly in the main session.
 - Style guide checklist: walk the diff against `style-guide/rails-style-guide.md`.
+- Architecture check, when the ticket has an architecture document: the diff builds the components this ticket introduces with the document's names, layers and responsibilities, uses other tickets' components rather than re-creating them, and follows its shared-file conventions. A departure that wasn't approved is a finding.
 
 **Gate**: report baseline-vs-after plus all findings to the user. If anything needs fixing, loop back into Phase 5 for that fix (small batch, reviewed), then re-run the affected checks — don't re-run everything from scratch unless the fix was broad.
 
@@ -136,6 +141,7 @@ Invoke the `correctness-checker` agent (via the Agent tool) once the quality gat
 
 - The full ticket (title, description, acceptance criteria, comments).
 - The decision log from Phase 3.
+- The architecture document, if the ticket has one.
 - The diff (or list of changed files + base ref) for this ticket.
 
 **Gate**: present its report to the user. If it finds gaps, loop back into Phase 5.
@@ -154,11 +160,16 @@ Post a final comment on the ticket — this is the permanent record of what ship
   - Rejected — findings checked and found inaccurate, with what was actually verified (a hallucinated claim caught by reading the real source is worth recording so the pattern is visible later).
   - Already-approved — anything the review flagged that was in fact a decision made earlier in the ticket; note this so the record doesn't look like a contradiction.
 - **The correctness check's verdict** — including a second pass if the first one found gaps. A correctness check that finds nothing is worth stating explicitly ("no gaps found"), not omitting.
+- **Architecture changes** — any approved departure from the architecture document, and whether the document has been updated. Omit when there were none.
+- **Deployment tasks** — every command this ticket needs run at deploy time (migrations, rake tasks, anything beyond deploying the code), one per line, per "Deployment tasks" in `references/ticket-template.md`. "None" when there are none.
 
 Then **gate**: ask whether to push the branch and open the PR. If approved, follow the push and PR steps in `references/git.md`; otherwise both stay with the user.
 
+If the ticket has deployment tasks and a feature document, offer to add them to its **Deployment tasks** section once the PR is merged.
+
 **Auto mode:**
 
-1. Push the branch and open the PR against the epic branch, per `references/git.md`. The PR body carries the same record as the final comment, plus every assumption from the ticket.
-2. Post the final comment under a `**🤖 Agent — Complete**` heading, with the PR link at the top.
-3. Swap the label to `agent:pr-open` and exit. Linear moves the ticket to In Review when the PR opens; the orchestrator posts token usage after this run ends.
+1. Check `<state dir>/deployment-tasks.md` against the diff: every migration and new rake task in it is listed, and the file says `None` if there are none. Never edit the feature document — the orchestrator adds the list there when the PR merges.
+2. Push the branch and open the PR against the epic branch, per `references/git.md`. The PR body carries the same record as the final comment, plus every assumption from the ticket.
+3. Post the final comment under a `**🤖 Agent — Complete**` heading, with the PR link at the top.
+4. Swap the label to `agent:pr-open` and exit. Linear moves the ticket to In Review when the PR opens; the orchestrator posts token usage after this run ends.

@@ -47,6 +47,7 @@ Everything the orchestrator knows between ticks is in Linear or on disk, never i
       run-<n>.json, run-<n>.stderr  output of each worker run
       pid                           PID of the running worker, while one runs
       baseline.md, pr-body.md, …    written by the worker itself
+      deployment-tasks.md           the ticket's deploy-time commands, written by the worker
 ```
 
 `<repo>` is the repo's name on GitHub; `<project-slug>` is the Linear project's name in lowercase snake_case.
@@ -92,11 +93,12 @@ For every ticket folder with a `pid` file, check the process with `kill -0 <pid>
 For each ticket that has a `worker.md` not yet marked cleaned up, and whose Linear status is now QA, Done, or Canceled:
 
 1. If a worker is still running (only possible for Canceled), stop it: `kill <pid>`.
-2. Remove the worktree: `git worktree remove <worktree>`. Without `--force`: if git refuses because of uncommitted changes, leave the worktree, report it, and carry on with the rest.
-3. Delete the local ticket branch: `git branch -D <ticket branch>`.
-4. Drop the worker's databases, per "Cleaning up" in `references/docker.md`.
-5. Remove the ticket's `agent:*` label (`removeLabels` only — there's nothing to swap to).
-6. Mark `worker.md` cleaned up. Keep the ticket folder: its run logs are the record of what happened.
+2. **Record deployment tasks** — skip for Canceled, or if `worker.md` already marks them recorded (a re-claim after Rejected writes a fresh `worker.md`, so rework gets recorded too). Read `<ticket state dir>/deployment-tasks.md`, then merge its commands into the **Deployment tasks** section of the feature document, per "Deployment tasks" in `references/ticket-template.md`: fetch the document fresh, add only lines that aren't already there, and save it. Then mark them recorded in `worker.md`. If the file is missing, read the list from the PR body's Deployment tasks section instead (`gh pr view <branch> --json body`), and say so in the report.
+3. Remove the worktree: `git worktree remove <worktree>`. Without `--force`: if git refuses because of uncommitted changes, leave the worktree, report it, and carry on with the rest.
+4. Delete the local ticket branch: `git branch -D <ticket branch>`.
+5. Drop the worker's databases, per "Cleaning up" in `references/docker.md`.
+6. Remove the ticket's `agent:*` label (`removeLabels` only — there's nothing to swap to).
+7. Mark `worker.md` cleaned up. Keep the ticket folder: its run logs are the record of what happened.
 
 A ticket cleaned up after QA can come back as Rejected and be claimed again; that claim starts a new worktree, branch, and session, and the run numbering carries on.
 

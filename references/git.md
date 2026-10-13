@@ -125,4 +125,7 @@ Closes <TICKET-ID> — <Linear ticket URL>
 
 ## Assumptions
 <every assumption logged on the ticket; "None" if none>
+
+## Deployment tasks
+<one command per line, per "Deployment tasks" in references/ticket-template.md; "None" if none>
 ```
