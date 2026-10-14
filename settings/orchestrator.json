@@ -28,6 +28,8 @@
       "Bash(cp *)",
       "Bash(cat *)",
       "Bash(ls *)",
+      "Bash(date *)",
+      "Bash(echo *)",
       "mcp__claude_ai_Linear__get_issue",
       "mcp__claude_ai_Linear__list_issues",
       "mcp__claude_ai_Linear__list_comments",

@@ -35,6 +35,7 @@ See `skills/feature-planning/SKILL.md` and `skills/ticket-workflow/SKILL.md` for
 - `settings/orchestrator.json` — permissions for the orchestrator's session.
 - `bin/start-worker` — starts or resumes one auto mode agent in the background.
 - `bin/agent-status` — a live view of where each auto mode agent is, from the progress logs they keep.
+- `apps/menubar/` — a macOS menu bar app showing the same, with Linear status, notifications and links.
 
 ## Using it in a project
 
@@ -104,6 +105,16 @@ To see where each running agent is (its phase, slice, or quality check), run thi
 ```bash
 /path/to/bishop/bin/agent-status        # all projects; or pass one repo's or project's folder under ~/.bishop
 ```
+
+### Menu bar app (macOS)
+
+`apps/menubar` is a small menu bar app with the same view, plus what's waiting on you in Linear. Build it with `apps/menubar/build.sh` (needs Xcode or its command line tools), copy `build/Agent Status.app` to `/Applications`, and open it.
+
+- **The icon** is a dot with how many tickets need you beside it: **red** when something needs you (a plan to approve, a question, a failed gate, an agent error, or a PR to review), **amber** when something looks stuck (an agent quiet for 20 minutes, or an orchestrator that hasn't ticked for 15), **green** while agents are working, and **grey** otherwise.
+- **Click it** for every ticket the agents hold, grouped by project and most urgent first: the ticket, why it needs you, its latest progress line, an estimated progress bar from its phase and slice, and links that open the ticket in Linear and, once there is one, its PR. Click a row for its last five progress lines and a link to its worktree.
+- **Notifications** when a ticket turns red or an agent goes quiet; clicking one opens the ticket, or the PR when it's ready for review.
+
+It only reads files under `~/.bishop`: each worker's `progress.md`, and the `status.json` the orchestrator writes every tick with labels, statuses and links. It never calls Linear or changes anything. `AgentStatus --print` (the binary inside the app) prints the same view in the terminal.
 
 The orchestrator stops its loop by itself once every ticket in the project is in QA, Done or Canceled and its worktrees and databases are cleaned up. If a ticket is rejected after that, start it again.
 

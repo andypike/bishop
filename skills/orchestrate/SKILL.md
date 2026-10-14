@@ -41,6 +41,7 @@ Everything the orchestrator knows between ticks is in Linear or on disk, never i
   worktrees/<TICKET-ID>/            one git worktree per ticket
   <project-slug>/
     project.md                      preflight results (see references/preflight.md)
+    status.json                     tickets, labels and links for the menu bar app, rewritten every tick
     <TICKET-ID>/
       worker.md                     branch, worktree, session ID, crash count, run count
       prompt.md                     the worker's first prompt
@@ -158,6 +159,40 @@ For a `DATABASE_URL` project, add the development prefix after the test prefix, 
 
 End the tick with one short summary: each ticket the orchestrator is tracking with its current state, then `running <n>/<max>`, how many tickets wait on a developer (🔴), and the pause end time if paused. Mention anything the tick couldn't do (a worktree git refused to remove, a ❌ preflight check).
 
+Then write the status file, below. Write it every tick, even one stopped by a ❌ preflight check: its age is how the menu bar app tells that the orchestrator has stopped ticking.
+
+### Status file
+
+`<project state dir>/status.json` is the Linear side of the menu bar app's view (`apps/menubar`). The app reads only local files, so this file is how it learns labels, statuses and links. Rewrite it whole each tick:
+
+```json
+{
+  "project": "<Linear project name>",
+  "project_url": "<Linear project URL>",
+  "loop": "running",
+  "paused_until": null,
+  "max_workers": 2,
+  "tickets": [
+    {
+      "id": "ENG-1234",
+      "title": "<ticket title>",
+      "url": "<Linear issue URL>",
+      "status": "In Progress",
+      "label": "agent:working",
+      "pr_url": null,
+      "worktree": "<worktree path, or null>"
+    }
+  ]
+}
+```
+
+- **`loop`** — `running`; `paused` during a usage-limit pause, with `paused_until` as an ISO 8601 time; `finished` on the tick that stops the loop (step 7).
+- **`tickets`** — every ticket in the project that carries an `agent:*` label or has a `worker.md` not yet marked cleaned up. Read statuses and labels from this tick's project-wide issue listing; if step 5 was skipped, list the issues once now.
+- **`label`** — the ticket's `agent:*` label, or `null` once cleaned up.
+- **`pr_url`** — for a ticket labelled `agent:pr-open`: the PR URL from the issue's GitHub attachment, or `gh pr view <ticket branch> --json url -q .url`. Record it in `worker.md` once found, rather than looking it up every tick.
+
+Write it with the Write tool, valid JSON, nothing else in the file.
+
 ## Step 7 — Finish
 
 The project is **finished** when all of these hold after this tick:
@@ -166,7 +201,7 @@ The project is **finished** when all of these hold after this tick:
 - no worker is running (no `pid` files);
 - every `worker.md` is marked cleaned up.
 
-Then end auto mode for the project: cancel the loop that runs this skill, and end the report with `Project finished — loop stopped.` For a fixed-interval loop, find its job with `CronList` (the one whose prompt is this skill for this project) and delete it with `CronDelete`; for a self-paced loop, stop it rather than scheduling another wakeup. Don't ask first — finishing is the expected end of the run.
+Then end auto mode for the project: set `loop` to `finished` in `status.json`, cancel the loop that runs this skill, and end the report with `Project finished — loop stopped.` For a fixed-interval loop, find its job with `CronList` (the one whose prompt is this skill for this project) and delete it with `CronDelete`; for a self-paced loop, stop it rather than scheduling another wakeup. Don't ask first — finishing is the expected end of the run.
 
 If a clean-up step failed (a worktree git refused to remove), the project isn't finished: the loop keeps running so the next tick retries, and the report keeps saying what's stuck.
 
