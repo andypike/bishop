@@ -36,12 +36,12 @@ A single-select label group named `agent` on the team. 🔴 marks the states whe
 | `agent:planning` | orchestrator, on claim | Worker is investigating and drafting the plan. |
 | `agent:awaiting-approval` 🔴 | worker | Plan posted; waiting for developer sign-off. |
 | `agent:plan-approved` | developer | Plan signed off; resume the worker. |
-| `agent:working` | worker | Implementing and running the quality gate. |
+| `agent:working` | worker; orchestrator, for merge conflicts | Implementing and running the quality gate — or, after the PR opened, merging the epic in to resolve conflicts with work merged since. |
 | `agent:needs-input` 🔴 | worker | An escalation trigger fired; the question is in a comment. |
 | `agent:gate-failed` 🔴 | worker | The quality gate still fails after two retries; details are in a comment. |
 | `agent:error` 🔴 | orchestrator | The worker crashed twice; the log path is in a comment. |
 | `agent:answered` | developer | Developer has responded to a 🔴 state or a plan; resume the worker. |
-| `agent:pr-open` | worker | PR created and linked; developer reviews and merges. |
+| `agent:pr-open` | worker | PR created and linked; developer reviews and merges. If the PR stops merging cleanly, the orchestrator swaps back to `agent:working` and the worker resolves it. |
 
 ## Changing the label: always a swap
 

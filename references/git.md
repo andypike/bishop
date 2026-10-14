@@ -90,6 +90,19 @@ The epic, root, and every other branch are read-only to this workflow. If a push
 
 Interactive mode pushes at the Phase 8 gate. Auto mode pushes when it parks after implementation has started, and at the end of Phase 8.
 
+## Merge conflicts
+
+**Auto mode only.** When another ticket's PR merges first and touched the same lines, this ticket's PR can no longer merge into the epic. The orchestrator spots it and resumes the worker to bring the epic into the ticket branch, by merge rather than rebase, so nothing is force-pushed and the history a reviewer may have seen stays put:
+
+```bash
+git fetch origin <epic-branch>
+git merge --no-edit origin/<epic-branch>
+```
+
+Run each alone, as with `git push`. These two forms, and `git merge --abort`, are the only merges a worker may run: never merge `main`, `master`, or another ticket's branch.
+
+If the merge stops on conflicts, `git status` lists the conflicted files. Resolve each one in the file itself, `git add` it, then `git commit --no-edit` to complete the merge. To give up and leave the branch as it was, `git merge --abort`. Then push the ticket branch as usual; the PR updates itself.
+
 ## Opening the PR
 
 Write the body to a file (auto mode: `<state dir>/pr-body.md`; interactive: under `$TMPDIR`), then:

@@ -116,6 +116,8 @@ To see where each running agent is (its phase, slice, or quality check), run thi
 
 It only reads files under `~/.bishop`: each worker's `progress.md`, and the `status.json` the orchestrator writes every tick with labels, statuses and links. It never calls Linear or changes anything. `AgentStatus --print` (the binary inside the app) prints the same view in the terminal.
 
+If a ticket's PR stops merging cleanly because another ticket merged first, the orchestrator resumes that ticket's agent to merge the epic into its branch and resolve the conflicts, keeping both tickets' changes. It re-runs the tests, pushes, and comments on the ticket with how each file was resolved. It parks with `agent:needs-input` instead when a conflict needs a decision.
+
 The orchestrator stops its loop by itself once every ticket in the project is in QA, Done or Canceled and its worktrees and databases are cleaned up. If a ticket is rejected after that, start it again.
 
 ## Iterating on the plugin

@@ -35,11 +35,15 @@ Two more stops come from the quality checks rather than from judgement:
 8. **Quality gate still failing** — after two retries, any Phase 6 check still fails or regresses against baseline. Park with `agent:gate-failed`.
 9. **Correctness gaps remain** — the correctness check still reports gaps after one fix attempt. Park with `agent:needs-input`, quoting the report.
 
+And one from keeping an open PR mergeable (see "Resolving merge conflicts" in the ticket-workflow skill):
+
+10. **Merge conflict needs a decision** — resolving it would mean choosing between this ticket's behaviour and another ticket's, departing from the architecture document, or the tests still fail after the merge and two fix attempts. Run `git merge --abort` first, so the branch is back where it was, then park with `agent:needs-input`, naming the conflicted files and the ticket whose PR they came from.
+
 ## Before parking
 
 Once implementation has started, leave the branch in a state the developer can pick up:
 
-1. Commit any work in progress on the ticket branch: `<TICKET-ID>: WIP — parked: <trigger>`.
+1. Commit any work in progress on the ticket branch: `<TICKET-ID>: WIP — parked: <trigger>`. Never commit a half-resolved merge: abort it instead (trigger 10).
 2. Push the ticket branch, so the developer can inspect it or fix it themselves before swapping to `agent:answered`.
 
 ## Parking comments

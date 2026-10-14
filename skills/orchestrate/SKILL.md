@@ -93,7 +93,7 @@ For every ticket folder with a `pid` file, check the process with `kill -0 <pid>
 
 - **Usage limit** — the run ended in error and its `result` or stderr mentions a usage or rate limit. Not the worker's fault: don't count it as a crash. Pause the project (see [Usage limits](#usage-limits)) and mark the ticket in `worker.md` to resume once the pause ends.
 - **Parked** — the label is `agent:awaiting-approval`, `agent:needs-input`, or `agent:gate-failed`. The worker stopped on purpose; nothing to do until the developer responds.
-- **Finished** — the label is `agent:pr-open`. Post the token-usage comment (see [Comments](#comments)) and mark the ticket finished in `worker.md`.
+- **Finished** — the label is `agent:pr-open`. Post the token-usage comment (see [Comments](#comments)) and mark the ticket finished in `worker.md`. If `worker.md` marks it as resolving conflicts, clear that mark instead: the token comment was posted when the PR first opened.
 - **Crashed** — anything else: the label is still `agent:planning` or `agent:working`, or the run JSON is empty or ends in an error. Add one to the crash count in `worker.md`. After the first crash, mark the ticket to resume. After the second, post the error comment and swap the label to `agent:error`; the developer takes it from there.
 
 ## Step 3 — Clean up
@@ -112,12 +112,23 @@ A ticket cleaned up after QA can come back as Rejected and be claimed again; tha
 
 ## Step 4 — Resume
 
-Skip this step while the project is paused. A ticket needs resuming when its label is `agent:plan-approved` or `agent:answered` (the developer has responded), or when step 2 marked it after a crash or a usage limit. For each, while a slot is free:
+Skip this step while the project is paused. A ticket needs resuming when its label is `agent:plan-approved` or `agent:answered` (the developer has responded), when step 2 marked it after a crash or a usage limit, or when its open PR has merge conflicts.
+
+**Finding conflicted PRs** — for each ticket labelled `agent:pr-open` and still In Review, check whether its PR can merge, running this alone:
+
+```bash
+gh pr view <ticket branch> --json mergeable -q .mergeable
+```
+
+`CONFLICTING` means another ticket merged first and the PR can no longer merge into the epic: it needs resuming. `MERGEABLE` needs nothing. `UNKNOWN` means GitHub hasn't worked it out yet; check again next tick. Swap the label to `agent:working` only when you start its worker (below), and mark `worker.md` as resolving conflicts.
+
+For each ticket needing a resume, while a slot is free:
 
 1. Write `resume-prompt.md` for the reason:
    - **Developer responded**: `<TICKET-ID>'s label is now <label>. Resume in auto mode per the ticket-workflow skill's "Resuming in auto mode" section: read every comment posted since your last parking comment, apply them, and continue.`
    - **After a crash or usage limit**: `Your previous run stopped before finishing (<reason>). Resume in auto mode where you left off: check the branch's commits and your comments on the ticket for what's already done, then continue.`
-2. Append `Resumed · <label, or crash / usage limit>` to `progress.md`.
+   - **Merge conflicts**: `<TICKET-ID>'s PR no longer merges into <epic branch>: other work merged first and conflicts with it. Follow the ticket-workflow skill's "Resolving merge conflicts" section.` Swap the label from `agent:pr-open` to `agent:working` before starting the worker.
+2. Append `Resumed · <label, crash / usage limit, or merge conflicts>` to `progress.md`.
 3. Start the worker with its session ID.
 
 If the session can't be resumed (the run ends at once with an error saying the conversation wasn't found), start a fresh worker from `prompt.md` instead, with this line added at the top: `You are resuming work on this ticket in a fresh session: rebuild your context first, per the skill's "Resuming in auto mode" section.`

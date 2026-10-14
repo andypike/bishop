@@ -45,6 +45,26 @@ Log before any command that could run for minutes, so the line's age shows how l
 
 The orchestrator resumes a parked worker once its label is `agent:plan-approved` or `agent:answered`. Read every comment since your most recent agent parking comment — they are the developer's binding response — then continue from where you parked. If you start without your earlier context (a fresh session rather than a resumed one), rebuild it first from the ticket's agent comments (plan, decisions, assumptions), the branch's commits, and the state directory.
 
+### Resolving merge conflicts
+
+The orchestrator also resumes a worker after its PR is open, when another ticket merged first and the PR now conflicts with the epic. The resume prompt says so; the label is `agent:working` again. The plan, the code, and the reviewed PR stay as they are — this run only makes the PR mergeable:
+
+1. Log `Merge conflicts · started`. Bring the epic in, per "Merge conflicts" in `references/git.md`.
+2. Resolve each conflicted file so **both** tickets' behaviour survives: read the other ticket's changes (`git log origin/<epic-branch> -- <file>` names the commit and ticket) and the architecture document, then combine them. Never just take one side, and never delete the other ticket's code or tests.
+3. If a conflict can't be resolved that way, park per trigger 10 in `references/escalation.md`.
+4. Complete the merge, then run the full test suite and the Phase 6 checks for the files the resolution touched. Fix failures Phase 5 style; after two attempts, trigger 10 again.
+5. Push the ticket branch, post the comment below, log `Merge conflicts · resolved`, and swap back to `agent:pr-open`. Don't edit the PR body: the comment is the record.
+
+```markdown
+**🤖 Agent — Merge conflicts resolved**
+
+<epic branch> had moved on since this PR opened (<other ticket IDs>), and the PR no longer merged. Merged it into this branch.
+
+- `<file>` — <how the two changes were combined>
+
+Tests: <examples, pass/fail>. Re-ran <checks> on the resolved files: <results>.
+```
+
 ## Phase 1 — Ticket intake
 
 Fetch the ticket via whatever Linear MCP tools are available in this session (search/get issue by identifier). Pull title, description, acceptance criteria, **status**, and existing comments. If the ticket reference is ambiguous or not found, ask rather than guessing which ticket was meant.
