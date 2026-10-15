@@ -90,18 +90,24 @@ The epic, root, and every other branch are read-only to this workflow. If a push
 
 Interactive mode pushes at the Phase 8 gate. Auto mode pushes when it parks after implementation has started, and at the end of Phase 8.
 
-## Merge conflicts
+## Bringing in the epic
 
-**Auto mode only.** When another ticket's PR merges first and touched the same lines, this ticket's PR can no longer merge into the epic. The orchestrator spots it and resumes the worker to bring the epic into the ticket branch, by merge rather than rebase, so nothing is force-pushed and the history a reviewer may have seen stays put:
+**Auto mode only.** A worker brings the latest epic into its ticket branch:
+
+- at the start of Phase 5, since tickets it builds on may have merged while the plan waited for approval;
+- whenever the developer asks for it, for example in a plan approval;
+- when its open PR conflicts with the epic (see "Resolving merge conflicts" in the ticket-workflow skill).
+
+It always merges, using these two commands:
 
 ```bash
 git fetch origin <epic-branch>
 git merge --no-edit origin/<epic-branch>
 ```
 
-Run each alone, as with `git push`. These two forms, and `git merge --abort`, are the only merges a worker may run: never merge `main`, `master`, or another ticket's branch.
+Run each alone, as with `git push`. If the branch has no commits of its own yet, the merge is a fast-forward. Otherwise it adds a merge commit, so nothing is ever force-pushed and the history a reviewer may have seen stays put. A request to rebase onto the epic, or to fast-forward the branch, is met by this merge. Log that as an assumption rather than parking. Rebasing, `--ff-only` and any other merge are denied to workers. They may run only these two commands and `git merge --abort`, and must never merge `main`, `master`, or another ticket's branch.
 
-If the merge stops on conflicts, `git status` lists the conflicted files. Resolve each one in the file itself, `git add` it, then `git commit --no-edit` to complete the merge. To give up and leave the branch as it was, `git merge --abort`. Then push the ticket branch as usual; the PR updates itself.
+If the merge stops on conflicts, `git status` lists the conflicted files. Resolve each one in the file itself, `git add` it, then `git commit --no-edit` to complete the merge. To give up and leave the branch as it was, `git merge --abort`. When the branch has been pushed, push it again as usual; an open PR updates itself.
 
 ## Opening the PR
 

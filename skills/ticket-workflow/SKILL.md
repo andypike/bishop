@@ -49,7 +49,7 @@ The orchestrator resumes a parked worker once its label is `agent:plan-approved`
 
 The orchestrator also resumes a worker after its PR is open, when another ticket merged first and the PR now conflicts with the epic. The resume prompt says so; the label is `agent:working` again. The plan, the code, and the reviewed PR stay as they are — this run only makes the PR mergeable:
 
-1. Log `Merge conflicts · started`. Bring the epic in, per "Merge conflicts" in `references/git.md`.
+1. Log `Merge conflicts · started`. Bring the epic in, per "Bringing in the epic" in `references/git.md`.
 2. Resolve each conflicted file so **both** tickets' behaviour survives: read the other ticket's changes (`git log origin/<epic-branch> -- <file>` names the commit and ticket) and the architecture document, then combine them. Never just take one side, and never delete the other ticket's code or tests.
 3. If a conflict can't be resolved that way, park per trigger 10 in `references/escalation.md`.
 4. Complete the merge, then run the full test suite and the Phase 6 checks for the files the resolution touched. Fix failures Phase 5 style; after two attempts, trigger 10 again.
@@ -150,6 +150,7 @@ Only after this loop is quality-gate work appropriate — don't run RuboCop, Rub
 **Auto mode:**
 
 - **Branch**: the orchestrator created the worktree on the ticket branch, so only verify it — `git branch --show-current` matches the expected name. If it doesn't, park with `agent:needs-input`; never create or switch branches yourself.
+- **Epic**: before the first slice, bring the latest epic into the branch per "Bringing in the epic" in `references/git.md`, and log `Phase 5 · epic merged · <short SHA>`. With no commits of its own yet, this is a fast-forward. Skip it when resuming after a park mid-implementation. If the merge stops for any reason, `git merge --abort` and park with `agent:needs-input`.
 - **Slices** come from the approved plan, in order. Each slice runs steps 1, 2, 4 and 6 without the gates: write the failing test and watch it go red, implement until it's green, then commit (re-check the branch, stage only this slice's files).
 - **Escalation**: check every slice against the triggers in `references/escalation.md`, and post the slice's assumptions before moving on.
 - **Deployment tasks**: when a slice adds something that must run at deploy time — a migration, a rake or data task, a new environment variable — add it to `<state dir>/deployment-tasks.md` in that slice, following "Deployment tasks" in `references/ticket-template.md`. Keep the file even when it's empty: write `None` so the orchestrator can tell "nothing needed" from "not recorded".
