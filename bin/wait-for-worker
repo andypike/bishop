@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Blocks until the worker whose PID is in <state dir>/pid has exited, then
+# removes the pid file. Used by the orchestrate skill's epic review, run in
+# the background so the session is notified when the worker ends.
+#
+# Usage: wait-for-worker <state dir> [<poll seconds>]
+set -euo pipefail
+
+if [ $# -lt 1 ]; then
+  echo "usage: wait-for-worker <state dir> [<poll seconds>]" >&2
+  exit 64
+fi
+
+state_dir=$1
+interval=${2:-30}
+
+if [ ! -f "$state_dir/pid" ]; then
+  echo "wait-for-worker: no pid file in $state_dir" >&2
+  exit 66
+fi
+
+pid=$(cat "$state_dir/pid")
+while kill -0 "$pid" 2>/dev/null; do
+  sleep "$interval"
+done
+
+rm -f "$state_dir/pid"
+echo "worker $pid exited"

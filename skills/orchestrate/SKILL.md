@@ -15,6 +15,7 @@ References:
 - [`references/preflight.md`](../../references/preflight.md) — the checks run before any work starts, and the project state they produce.
 - [`references/docker.md`](../../references/docker.md) — the worker prefix and per-worker databases.
 - [`references/git.md`](../../references/git.md) — the epic branch, ticket branch names, and creating worktrees.
+- [`references/epic-review.md`](../../references/epic-review.md) — the optional review of the whole epic once the project finishes, and fixing what it finds.
 
 ## Starting the orchestrator
 
@@ -31,6 +32,8 @@ claude --settings <plugin root>/settings/orchestrator.json
 An optional `max_workers: <n>` after the project name sets how many workers may run at once (default 2). The orchestrator never runs more than preflight allows for the project.
 
 Keep the session open while auto mode should run. Stopping the loop stops new work; workers already running finish their current run. The orchestrator stops its own loop once the project is finished (step 7).
+
+`/bishop:orchestrate "<Linear project name>" review` — with `review` after the project name — doesn't tick: it runs an epic review straight away, per `references/epic-review.md`. Run it without a loop, after stopping any loop for the project.
 
 ## State
 
@@ -50,6 +53,7 @@ Everything the orchestrator knows between ticks is in Linear or on disk, never i
       baseline.md, pr-body.md, …    written by the worker itself
       deployment-tasks.md           the ticket's deploy-time commands, written by the worker
       progress.md                   one line per step, appended by the worker and the orchestrator
+    epic-review-<n>/                one folder per epic review (see references/epic-review.md)
 ```
 
 `progress.md` is what `bin/agent-status` shows. The worker's lines are defined in the ticket-workflow skill's "Progress log" section; the orchestrator appends its own, in the same format, at claim, resume and clean-up:
@@ -213,6 +217,8 @@ The project is **finished** when all of these hold after this tick:
 - every `worker.md` is marked cleaned up.
 
 Then end auto mode for the project: set `loop` to `finished` in `status.json`, cancel the loop that runs this skill, and end the report with `Project finished — loop stopped.` For a fixed-interval loop, find its job with `CronList` (the one whose prompt is this skill for this project) and delete it with `CronDelete`; for a self-paced loop, stop it rather than scheduling another wakeup. Don't ask first — finishing is the expected end of the run.
+
+Once the loop is stopped, offer an **epic review**, per "Offering it" in `references/epic-review.md`: a code review of the whole epic, now that every ticket has merged into it, with the developer choosing which findings to fix as new commits on the epic. Skip the offer if the epic hasn't changed since its last review.
 
 If a clean-up step failed (a worktree git refused to remove), the project isn't finished: the loop keeps running so the next tick retries, and the report keeps saying what's stuck.
 

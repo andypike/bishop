@@ -34,6 +34,8 @@ See `skills/feature-planning/SKILL.md` and `skills/ticket-workflow/SKILL.md` for
 - `settings/worker.json` — permissions and sandbox rules for headless auto mode agents.
 - `settings/orchestrator.json` — permissions for the orchestrator's session.
 - `bin/start-worker` — starts or resumes one auto mode agent in the background.
+- `references/epic-review.md` — the optional code review of a whole epic once its tickets have all merged, and how its findings get fixed.
+- `bin/wait-for-worker` — waits for one auto mode agent to exit (used by the epic review).
 - `bin/agent-status` — a live view of where each auto mode agent is, from the progress logs they keep.
 - `apps/menubar/` — a macOS menu bar app showing the same, with Linear status, notifications and links.
 
@@ -121,6 +123,8 @@ Each agent merges the latest epic into its branch before it starts implementing,
 If a ticket's PR stops merging cleanly because another ticket merged first, the orchestrator resumes that ticket's agent to merge the epic into its branch and resolve the conflicts, keeping both tickets' changes. It re-runs the tests, pushes, and comments on the ticket with how each file was resolved. It parks with `agent:needs-input` instead when a conflict needs a decision.
 
 The orchestrator stops its loop by itself once every ticket in the project is in QA, Done or Canceled and its worktrees and databases are cleaned up. If a ticket is rejected after that, start it again.
+
+When it stops, it offers to **review the whole epic**. Each ticket's PR was reviewed alone, so this looks for what only shows across tickets. It runs the `code-review` skill at `xhigh` effort over the epic's full diff, then shows you the findings with a recommendation for each. By default the recommended ones are fixed: an agent fixes them test first in a worktree, runs the quality gate, and the orchestrator pushes the commits straight onto the epic branch (fast-forward only). You can instead fix all of them, pick which to fix, or defer them, recording deferred findings as unreleased Linear tickets, in the feature document, or not at all. To review an epic at another time, run `/bishop:orchestrate "<Linear project name>" review`.
 
 ## Iterating on the plugin
 
