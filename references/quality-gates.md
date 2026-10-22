@@ -40,20 +40,42 @@ Mutation testing is **not** part of the baseline — there's no diff yet to muta
     <changed-file>:<method-start-line>-<method-end-line> \
     --spec <own_spec.rb>,<caller_spec.rb> \
     --example-targeting coverage \
-    --jobs 4 --warmup rails --incremental -t 60 \
+    --jobs <n> --warmup rails --incremental -t 60 \
     --format json --min-score 0.8
   ```
 
   Add `--integration minitest` on a Minitest project.
 
-  **Speed.** Mutation testing is usually the slowest check, so the command runs it in parallel and skips work it has already done:
+  **Speed.** Mutation testing is usually the slowest check. Its cost is roughly *mutations × the time each mutation's examples take*, so a target with ~280 mutations turns every extra second per mutation into ~5 minutes of gate time. The command runs mutations in parallel and skips work it has already done, and the spec choice and re-run rules below keep the multiplier small:
 
-  - **`--jobs 4`** runs four mutations at once. Each runs in its own forked process, with the mutation applied in memory. If parallel workers trip over the shared test database, Evilution marks those mutations `neutral` with `infra_error` and re-runs them one at a time, so the score stays honest. A large `summary.infra_retried` means contention, not a coverage problem: drop to `--jobs 2` for that project.
+  - **`--jobs <n>`** runs that many mutations at once. Each runs in its own forked process, with the mutation applied in memory. **Parallel jobs only help if each one has its own test database** (see "Parallel jobs and the test database" below); without that, pass `--jobs 1`. In auto mode, use the job count and per-job database command the orchestrator gives you. Otherwise, with per-job databases, pick `<n>` once per ticket: run `nproc` inside the container (with the same prefix as every other command), divide by the number of workers that may run at once (the orchestrator's `max_workers` in auto mode, default 2; 1 otherwise), and cap it at 8; never go below 2. If parallel workers trip over the test database anyway, Evilution marks those mutations `neutral` with `infra_error` and re-runs them one at a time, so the score stays honest. A large `summary.infra_retried` means contention, not a coverage problem: halve `<n>` for that project.
   - **`--warmup rails`** loads Rails' locales, routes and asset paths once, instead of in every forked mutation.
-  - **`--incremental`** caches killed mutations and skips them on a re-run while the source is unchanged. After adding tests to kill survivors, re-run the same command: only the survivors (and any mutations in source you changed) run again. The cache is keyed on the source code, not the tests, so if a fix rewrote or removed tests, re-run with `--no-incremental` in place of `--incremental` to ignore the cache.
+  - **`--incremental`** caches killed mutations and skips them on a re-run while the source is unchanged. See "Re-running after killing survivors" below.
   - **`-t 60`** caps each mutation at 60 seconds, so one that loops forever can't stall the gate. It's reported as `timed_out`.
 
-  These settings are new and unmeasured on real tickets: record the run's `summary.duration`, `total` and `infra_retried` alongside the score, so they can be tuned.
+  These settings are still being tuned: record the run's `summary.duration`, `summary.killtime`, `total`, `infra_retried` and the `--jobs` value alongside the score. `killtime / total` is the average seconds per mutation; if it rises well above the single-job figure as `<n>` goes up, the jobs are queuing on something shared.
+
+  **Parallel jobs and the test database.** Evilution sets `TEST_ENV_NUMBER` in each job (`""`, `"2"`, `"3"`, …), following the parallel_tests convention, but Rails has already read `config/database.yml` before the jobs fork, so interpolating it there isn't enough on its own. With every job on one database, tests that insert the same fixed-id rows (seed data loaded in `setup`, for example) wait on each other's open transactions, and the jobs take turns. On a real ticket (2026-10-22), `--jobs 4` on a shared database took 137s for 33 mutations against 146s for `--jobs 1`, with Postgres showing three of the four jobs waiting on a lock. With a database per job the same run took 52s at `--jobs 4` and 36s at `--jobs 8`, with identical results. Per-job databases need, in the project:
+
+  - `config/database.yml`'s test database name ending in `<%= ENV['TEST_ENV_NUMBER'] %>`;
+  - a `worker_process_start` hook (in `.evilution.yml` or `config/evilution.yml`) that rebuilds the test database config with the job's `TEST_ENV_NUMBER` and re-establishes every connection pool that uses it, including abstract base classes that call `establish_connection` themselves;
+  - the extra databases (`<test db>2` … `<test db><n>`) created from the prepared test database, e.g. `CREATE DATABASE <test db>2 TEMPLATE <test db>`.
+
+  Until a project has these, run `--jobs 1`: more jobs on a shared database cost the same wall-clock time and make every mutation's timing noisy.
+
+  **Coverage.** Leave the project's coverage tool (e.g. `COVERAGE=true` for SimpleCov) off for Evilution runs: it's needed for the test-suite check, not here, and it made each mutation about 25% slower on the same ticket. In auto mode, run Evilution through the mutation prefix the orchestrator gives you; it leaves coverage off.
+
+  **Choosing specs for speed.** Every spec file in `--spec` is a candidate for every mutation, so one slow file multiplies across the whole run:
+
+  - **Start with unit-level specs**: the target's own spec, and model, service, presenter or query specs that call it. Leave out controller, request, feature, system and integration specs; each example boots a request stack and costs far more per mutation. On a real ticket (2026-10-22), a ~280-mutation run of a 93-line service that included one controller test was still running after 30 minutes and had to be stopped.
+  - **Time each candidate spec file first**, with a plain test run. Any file much slower than its neighbours is a warning sign. Prefer speeding the file up (shared setup, fewer database writes, building objects in memory instead of creating records) over leaving it in as it is.
+  - **Add slower specs only where unit specs leave a gap**: if a method is only exercised through a controller or request spec, run a separate invocation for just that method's range, with just those specs. This keeps the "Pass `--spec` explicitly" pitfall below covered without making every mutation pay for a request stack.
+
+  **Re-running after killing survivors.** Don't re-run the whole target from scratch:
+
+  - Re-run the **same command with `--incremental`**: killed mutations are cached and skipped, so only the survivors run again. Adding tests doesn't invalidate the cache, since it's keyed on the source code, not the tests.
+  - If the fix also changed source, narrow the range to the **methods that had survivors or changed**, rather than the whole file. Mutations in unchanged methods were already killed by tests that still exist.
+  - Use `--no-incremental` only if a fix **rewrote or removed** tests that killed earlier mutations, and then only over the affected methods.
 
   - Use the diff hunks for this ticket to find *which methods* changed, then widen each range to whole methods (see pitfalls below).
   - `--min-score` is a starting point (0.8), not a hard rule — use judgement per ticket; the real bar is "no unreasonable survivors in the code we just wrote." Read `survived[]` in the JSON output and treat each as a genuine gap to close with a test, not noise to suppress.

@@ -168,7 +168,7 @@ Docker: put this prefix in front of every Ruby/Rails command — tests, RuboCop,
 Run until you park the ticket or open the PR, then exit.
 ```
 
-For a `DATABASE_URL` project, add the development prefix after the test prefix, introduced as: `Development database — only for db:prepare and migrations, never for tests:`. If `project.md` lists skipped quality tools, add: `Skipped for this project by the developer: <tools>. Don't run them; report them as skipped in the baseline and the PR.` For a Rejected ticket, add to the ticket line: `This is rework after QA: the developer's comments since the last merge are the scope.`
+For a `DATABASE_URL` project, add the development prefix after the test prefix, introduced as: `Development database — only for db:prepare and migrations, never for tests:`. Add the mutation testing settings from `project.md` (see "Mutation testing" in `references/docker.md`): if the mutation prefix differs from the test prefix, add it, introduced as `Mutation testing — run Evilution and its database setup through this prefix instead (coverage off):`; then either `Before each Evilution run in Phase 6, copy the test database once per job: <per-job database command>, then pass --jobs <n>.` or `Run Evilution with --jobs 1: this project's test database isn't copied per job.` If `project.md` lists skipped quality tools, add: `Skipped for this project by the developer: <tools>. Don't run them; report them as skipped in the baseline and the PR.` For a Rejected ticket, add to the ticket line: `This is rework after QA: the developer's comments since the last merge are the scope.`
 
 ## Step 6 — Report
 

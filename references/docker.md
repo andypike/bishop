@@ -106,10 +106,18 @@ Only the databases are separated per worker. Any other service the test suite **
 
 Preflight looks for this — a search gem in the `Gemfile`, plus index setup or cleanup in the test support files — and checks whether index names can carry a per-worker suffix (with Searchkick, `Searchkick.index_suffix = ENV["…"]`). If they can, the prefix passes that variable like the database names. If not, preflight reports it, and the orchestrator runs that project with one active worker until the project adds the suffix.
 
+### Mutation testing (orchestrator, at preflight)
+
+Evilution needs two things the rest of the worker's commands don't (see "Parallel jobs and the test database" and "Coverage" in `references/quality-gates.md`):
+
+- **Mutation prefix** — if the worker prefix turns on a coverage tool (for example `-e COVERAGE=true` for SimpleCov), record a copy without it. Workers run Evilution, and its database setup, through the mutation prefix, and everything else through the worker prefix. Setting the variable to an empty value isn't the same as leaving it out: a test helper that checks `if ENV['COVERAGE']` treats `""` as on. If the worker prefix doesn't turn on coverage, the two are the same.
+- **Per-job databases** — if the project has a command that copies the test database once per Evilution job, record it, with `<jobs>` as a placeholder, and the job count: `nproc` inside the container divided by the maximum active workers, capped at 8 and no less than 2. Record the names the copies take, so clean-up can drop them. If the project has no such command, record `--jobs 1`, and say what the project would need.
+
 ### Using it (worker)
 
 - Every Ruby/Rails command goes through the prefix, never `exec` into the developer's running service: that runs the developer's checkout, not yours.
 - Databases start empty. The test database is created on the first `rails test:db` (or `db:test:prepare`). Create the development database with `db:prepare` only when the ticket has a migration, before running it, so `db/schema.rb` is dumped from your own database.
+- Run Evilution through the mutation prefix, if the orchestrator gave you one. When it gave you a per-job database command, run that first in each Phase 6 pass (after any migrations, since the copies don't follow schema changes), then pass the job count it gave you to `--jobs`.
 - Leave the shared stack running: stopping or removing its services would break every other worker and the developer's own environment. `settings/worker.json` denies those commands.
 
 ### Cleaning up (orchestrator)
@@ -120,4 +128,4 @@ When the ticket reaches QA or Done, drop the worker's databases through the serv
 docker compose -p <project> exec <db service> psql -U <user> -c "DROP DATABASE IF EXISTS <db name>_<ticket>;"
 ```
 
-One command per database, including any the orchestrator created at claim. `IF EXISTS` matters: the development database only exists if the ticket had a migration.
+One command per database, including any the orchestrator created at claim and the per-job copies of the test database. `IF EXISTS` matters: the development database only exists if the ticket had a migration, and the copies only if the worker ran mutation testing.

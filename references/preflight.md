@@ -50,6 +50,7 @@ On success, save the results to `~/.bishop/<repo>/<project-slug>/project.md`:
 - the epic branch
 - the worker prefix template (and the development prefix, for `DATABASE_URL` projects)
 - per-worker databases the orchestrator must create at claim and drop at clean-up, with the service each lives on
+- the mutation prefix, the per-job database command and the job count (or `--jobs 1`), per "Mutation testing" in `references/docker.md`
 - quality tools skipped for this project
 - the files to copy into each worktree
 - the maximum active workers: the orchestrator's setting (default 2), or 1 if check 13 warned
