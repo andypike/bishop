@@ -162,8 +162,20 @@ An entry describes behaviour of a library, config key, SDK or toolchain, never o
 - **SDK**: 54
 - **Trigger**: `@testing-library/react-native` 12.x.
 - **Symptom**: every `render()` fails with `Element type is invalid: expected a string … but got: object` from `detectHostComponentNames`.
-- **Fix**: upgrade to `^13.3`. Stop at 13 unless you want a separate migration: in 14, `render`, `fireEvent`, `waitFor` and `act` all return promises, which touches every test file. 13 also infers `renderHook` prop types more strictly, so an `initialProps` callback may need a parameter annotation.
+- **Fix**: upgrade to `^13.3`. Stop at 13 unless you want a separate migration (see RNTL 14 below), since 14 touches every test file. 13 also infers `renderHook` prop types more strictly, so an `initialProps` callback may need a parameter annotation.
 - **Seen in**: Pitstop, `expo-57-2026-07.md` #4.
+
+### RNTL 14: async APIs and React Native's text rule
+- **Trigger**: `@testing-library/react-native` 14.x (React 19+, RN 0.78+, Node ^22.13 or 24+).
+- **Dependencies**: remove `react-test-renderer` (and any `overrides` entry for it) and `@types/react-test-renderer`; add `test-renderer` on the line matching the React minor (`~1.3` for React 19.3). Import `TestInstance` from `test-renderer` in place of `ReactTestInstance`.
+- **Async**: `render`, `renderHook`, `rerender`, `unmount`, `fireEvent` and `act` return promises. The `rntl-v14-async-functions` codemod adds the awaits, but doesn't follow helpers defined in test files; pass them with `--param customRenderFunctions=…`. It downloads and runs code from the codemod registry, so if that's not allowed, a TypeScript-compiler script that adds `await` and marks the enclosing function `async` does the same job. Check by hand anything that lands in an `async` callback of `forEach` or `expect(() => …)`, where nothing waits for the promise.
+- **Symptom**: after the awaits, tests asserting a brief loading state fail (`expected true, received false` on `loading`, or `queryByText("Loading: true")` is null).
+- **Cause**: awaiting `render` flushes resolved mocks before returning, so the request has already finished. Under v13 these assertions only passed because they ran before it did.
+- **Fix**: for tests about the in-flight state, hold the mock open: `mockReturnValue(new Promise(() => {}))`, or keep the `resolve` and call it after the loading assertion. Otherwise assert the settled state.
+- **Symptom**: `Invariant Violation: Text strings must be rendered within a <Text> component`, from test components and mocks that render bare strings (e.g. `jest.fn(() => <View>Icon</View>)`, or a stray `;` after a closing JSX tag).
+- **Fix**: wrap the text in `<Text>`, or make icon mocks text-free (`<View testID="…" />`) so their text doesn't collide with `getByText` regexes. The check is always on and matches device behaviour.
+- **Also**: snapshots with several root elements print as a fragment (`<>…</>`) instead of an array; update them once that's confirmed as the only difference.
+- **Seen in**: ICS Pro Coach, PR #772 (follow-up to `expo-58-2026-10.md`).
 
 ### `waitFor(() => value)` doesn't wait
 - **Trigger**: `waitFor(() => ` with a callback that returns a value instead of asserting.
