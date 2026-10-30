@@ -8,12 +8,16 @@ Tickets can be worked interactively, with a developer reviewing each step, or in
 
 See `skills/feature-planning/SKILL.md` and `skills/ticket-workflow/SKILL.md` for the full workflows.
 
+It also upgrades Expo / React Native apps: one SDK hop at a time with a checkpoint commit after each, guided by the project's own `docs/upgrades/` history and a shared list of gotchas from past upgrades. Each upgrade writes its own record and adds what it learned to that shared list. See `skills/react-native-upgrade/SKILL.md`.
+
 ## Prerequisites
 
 - A Linear MCP connector configured in the Claude Code session (used to read and create tickets, create feature documents, and post comments).
 - Target project uses RSpec or Minitest, and ideally already has RuboCop and RubyCritic configured (the workflow will ask before adding either).
 - [Evilution](https://github.com/marinazzio/evilution) for mutation testing — used instead of `mutant`, which requires a paid license for private code. Add `gem "evilution", group: :test` to the target project's Gemfile.
 - The project runs in Docker via `docker-compose`/`docker compose`. All Ruby/Rails commands (tests, RuboCop, RubyCritic, Evilution) run inside the container, never on the host — see `references/docker.md`.
+
+The prerequisites above are for the Rails workflows. `react-native-upgrade` runs on the host and needs no Linear or Docker. It needs the Node version from the project's `.nvmrc`, and ideally Xcode and the Android SDK. Whatever can't be built locally is verified with EAS builds.
 
 ## What's in here
 
@@ -27,6 +31,9 @@ See `skills/feature-planning/SKILL.md` and `skills/ticket-workflow/SKILL.md` for
 - `references/ticket-template.md` — the ticket and feature document structure `feature-planning` writes, and what makes a ticket a good single slice.
 - `references/architecture.md` — the feature's architecture document: what it settles, how it's built from the style guide, its Mermaid diagrams, and how tickets follow it.
 - `references/git.md` — the epic branch, ticket branches (`<TICKET-ID>_brief_summary`), per-slice commits, pushing, and opening the PR. Merging stays with the developer.
+- `skills/react-native-upgrade/SKILL.md` — upgrades an Expo / React Native app's SDK and libraries, hop by hop, then writes an upgrade record.
+- `references/react-native-upgrade/gotchas.md` — breakages from past upgrades that any app could hit, indexed by SDK. Every upgrade reads it, and adds what it learns.
+- `references/react-native-upgrade/upgrade-record-template.md` — the format of the `docs/upgrades/` record each upgrade leaves in the project.
 - `references/agent-status.md` — auto mode's Linear statuses and `agent` labels: what each means, who sets it, and how a developer responds.
 - `references/escalation.md` — when an auto mode agent stops for a developer, and what its Linear comments contain.
 - `skills/orchestrate/SKILL.md` — auto mode's orchestrator: claims released tickets, starts and resumes agents, and cleans up after merge. Run on a loop.
