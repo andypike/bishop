@@ -336,6 +336,37 @@ Neither store checks these at build time, so they show up as rejections after EA
 - **Fix**: `patch-package` ^8.
 - **Seen in**: ICS Pro Coach, `expo-58-2026-10.md` #9.
 
+### `min-release-age` turns a too-new version into an out-of-memory loop
+- **Trigger**: `min-release-age` in `npm config list` (e.g. `min-release-age = 3`, from a user or project `.npmrc`), together with a range whose floor is newer than the cutoff, such as `^X.Y.Z` copied from `npm view <pkg> version` the day it's published.
+- **Symptom**: `npm install` never finishes. It logs tens of thousands of `ERESOLVE overriding peer dependency` warnings in which every peer range is satisfied, then dies with `JavaScript heap out of memory`. More heap only makes it take longer. Installing just that package gives the real error: `ETARGET No matching version found for <pkg>@<version> with a date before …`.
+- **Cause**: npm can't pick any version that satisfies the range from before the cutoff. With several packages peering on it, the resolver loops rather than reporting `ETARGET`.
+- **Fix**: check the setting before choosing versions, and lower the floor to the newest version older than the cutoff (`npm view <pkg> time`). If an install shows thousands of ERESOLVE warnings, stop it and install the suspect package alone to get the real error.
+- **Seen in**: ICS Pro Coach, PR #774 (ESLint 10.14.0 a day after release).
+
+---
+
+## Tooling
+
+### ESLint 10: flat config only, and several plugins don't support it
+- **Trigger**: `eslint` 10, with an `.eslintrc*` / `.eslintignore`, or any of the plugins below in `package.json`.
+- **Symptom**: ESLint 10 ignores `.eslintrc*`, and `--ext` is an error. `eslint-plugin-react` 7.37 crashes on 10 (`context.getFilename is not a function`, [jsx-eslint/eslint-plugin-react#4018](https://github.com/jsx-eslint/eslint-plugin-react/issues/4018)), and `eslint-config-standard` and `eslint-plugin-import` declare peers of 9 or older.
+- **Fix**: write `eslint.config.mjs` with `defineConfig` / `globalIgnores` from `eslint/config`, moving `.eslintignore` into `globalIgnores` and `env` into `globals`. Remove `--ext` from the lint scripts. Replacements:
+  - `eslint-config-standard` → `neostandard` (`{ noStyle: true, ts: true }` with Prettier; it bundles `n`, `promise` and `@stylistic`)
+  - `eslint-plugin-react` → `@eslint-react/eslint-plugin` (`configs["recommended-typescript"]`)
+  - `eslint-plugin-import` → `eslint-plugin-import-x` (`flatConfigs.recommended` + `typescript`; set `import-x/resolver-next` to `[createTypeScriptImportResolver(…)]`, and rename `import/*` rules to `import-x/*`)
+  - `@typescript-eslint/eslint-plugin` + `parser` → the `typescript-eslint` meta package
+  - `eslint-config-prettier` 10, imported from `eslint-config-prettier/flat` and placed last
+  - `eslint-plugin-react-native` has no flat-config release; drop it unless its rules are used
+- **Also**: `@eslint-react` checks rules the old React plugin didn't: hook naming (a helper that calls a hook must be named `use…`), components defined inside components, `key` after a prop spread, and hook dependencies. Expect real findings. Fix the small ones and make the refactor-sized rules (`no-nested-component-definitions`, `static-components`) warnings rather than bundle a refactor into the tooling PR.
+- **Seen in**: ICS Pro Coach, PR #774.
+
+### Babel 8 is blocked by Expo
+- **SDK**: 58 (recheck at each hop).
+- **Trigger**: `@babel/core` or `@babel/preset-*` showing an 8.x in `npm outdated`.
+- **Cause**: `babel-preset-expo` 58 depends on Babel 7 plugins that call `api.assertVersion(7)` and throw under Babel 8, and `metro-transform-worker` requires `@babel/core ^7.25.2`.
+- **Fix**: stay on Babel 7 until `babel-preset-expo` and Metro move to 8. Defer it in the plan; don't force it with `overrides`.
+- **Seen in**: ICS Pro Coach, PR #774.
+
 ---
 
 ## Security pins
