@@ -274,6 +274,15 @@ These failures only show up in a full Android compile, which usually means EAS. 
 - **Fix**: upgrade the library, or `patch-package` it to use `proguard-android-optimize.txt`. Known affected: `react-native-blob-util` < 0.24.12 (fixed upstream) and `react-native-date-picker` ≤ 5.0.13 (unfixed as of 2026-10).
 - **Seen in**: ICS Pro Coach, `expo-58-2026-10.md` #9.
 
+### R8: libraries that load classes by name crash the release build
+- **SDK**: 58 (`expo-build-properties` `android.enableMinifyInReleaseBuilds`)
+- **Trigger**: turning R8 on. Check native modules, and their Maven dependencies, that ship no consumer keep rules but use `ServiceLoader`, `Class.forName` or reflection. Known affected: `react-native-date-picker` 5.x, through Time4J (`net.time4j:time4j-android`).
+- **Symptom**: the release build crashes on launch. For date-picker: `react-native-date-picker is not installed correctly`, then `"main" has not been registered`. Debug builds, Jest and builds with R8 off all work.
+- **Cause**: date-picker's module constructor calls Time4J's `ApplicationStarter.initialize`, which loads providers by class name. R8 strips and renames them, the constructor throws, and date-picker's `catch` replaces the real error with its installation message.
+- **Fix**: `extraProguardRules: "-keep class net.time4j.** { *; }"` in `expo-build-properties`.
+- **Diagnosing**: a library's own error message can hide R8 as the cause. Compare with a build that has R8 off (an earlier EAS preview APK works) on an emulator. Then list what survived with `apkanalyzer dex packages --defined-only <apk>` (in `cmdline-tools`; needs `build-tools`): a library left with a handful of renamed classes is the suspect. A local `./gradlew :app:assembleRelease` iterates on keep rules in minutes rather than an EAS build each time, and writes `mapping.txt` and `usage.txt`. Keep resource shrinking off: RN loads bundled images by resource name, which the shrinker can't see.
+- **Seen in**: ICS Pro Coach, PR #773 (follow-up to `expo-58-2026-10.md`).
+
 ---
 
 ## iOS native builds
