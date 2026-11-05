@@ -80,8 +80,17 @@ An entry describes behaviour of a library, config key, SDK or toolchain, never o
 - **SDK**: 58
 - **Trigger**: `@react-native-firebase/app` below 27.
 - **Symptom**: no build error. The plugin doesn't recognise SDK 58's scene-based `AppDelegate` (`return super.application(...)`), so it silently leaves out `FirebaseApp.configure()`.
-- **Fix**: React Native Firebase ^27, which installs Firebase's iOS SDK with Swift Package Manager and needs `expo-build-properties` `ios.useFrameworks: "dynamic"`. After prebuild, check that `FirebaseApp.configure()` is in the `AppDelegate`. Dynamic frameworks then expose pods with incomplete podspecs (see "iOS native builds").
-- **Seen in**: ICS Pro Coach, `expo-58-2026-10.md` #6.
+- **Symptom (prebuild)**: the only sign is a prebuild warning: `@react-native-firebase/app: Unable to determine correct Firebase insertion point in AppDelegate.swift. Skipping Firebase addition.`
+- **Fix**: React Native Firebase ^27, which installs Firebase's iOS SDK with Swift Package Manager and needs `expo-build-properties` `ios.useFrameworks: "dynamic"`. Firebase Apple SDK 13 is SPM-only, so RNFB 27's `ios.disableSPM` is no longer supported. After prebuild, check that `FirebaseApp.configure()` is in the `AppDelegate`. Dynamic frameworks then expose pods with incomplete podspecs (see "iOS native builds"). See also "SDK 58's scene-based AppDelegate silently defeats AppDelegate-patching plugins".
+- **Seen in**: ICS Pro Coach, `expo-58-2026-10.md` #6; Pitstop, `expo-58-2026-11.md` #6.
+
+### SDK 58's scene-based AppDelegate silently defeats AppDelegate-patching plugins
+- **SDK**: 58 (iOS 27 SDK scene lifecycle)
+- **Trigger**: any config plugin that edits `AppDelegate.swift`. Read the `»` warnings that `npx expo prebuild --clean` prints; this one causes no build error.
+- **Symptom**: prebuild warns and moves on, e.g. `withAppsFlyerAppDelegate: Automatic Swift AppDelegate modification failed`. The app builds and runs, but the integration (Firebase init, deep-link attribution) is silently missing.
+- **Cause**: the template now creates the window in `SceneDelegate`, ends `didFinishLaunching` with `return super.application(...)`, and no longer declares `application(_:open:options:)` or `continue userActivity`. Plugins that search for those exact blocks find nothing. Expo's `ExpoAppSceneDelegate` still forwards scene URL and user-activity events to `AppDelegate` overrides, so adding them back works.
+- **Fix**: upgrade to plugin versions that support SDK 58. Known: `@react-native-firebase/app` 27+ (above), `react-native-appsflyer` 7.0.4+ (JS API rewrite: `initSdk` → `init`, with `start()` only inside `registerSessionReadyListener`; `timeToWaitForATTUserAuthorization` is removed, so wait for the ATT decision yourself before `init()`). After prebuild, grep the AppDelegate for each integration's call.
+- **Seen in**: Pitstop, `expo-58-2026-11.md` #5–6.
 
 ### SDK 58 default behaviour changes
 - **SDK**: 58
@@ -142,6 +151,20 @@ An entry describes behaviour of a library, config key, SDK or toolchain, never o
 - **Jest 30 (SDK 58)**: `toBeCalledWith` and the other `toBe…` aliases removed; use `toHaveBeenCalledWith` etc. Snapshot files are rewritten for a new header link.
 - **Seen in**: ICS Pro Coach, `expo-58-2026-10.md` #5.
 
+### React Native Firebase 27: namespaced API removed
+- **Trigger**: `import analytics from "@react-native-firebase/analytics"` (or another default-export namespaced module) used as `analytics().logEvent(...)`.
+- **Symptom**: `TS1192: Module ... has no default export`.
+- **Fix**: the modular API: `logEvent(getAnalytics(), name, params)`. The custom-event overload accepts a plain `string`.
+- **Seen in**: Pitstop, `expo-58-2026-11.md` #6.
+
+### iOS 27 SDK: transparent `presentation: "modal"` screens turn opaque
+- **SDK**: 58 (built with Xcode 27 / iOS 27 SDK)
+- **Trigger**: a native-stack screen with `presentation: "modal"` (or a sheet) and `contentStyle: { backgroundColor: "transparent" }` that draws its own partial-height panel.
+- **Symptom**: on iOS the panel's background fills the whole screen, so the screen underneath no longer shows through.
+- **Cause**: the UIKit page sheet paints its own opaque background. react-native-screens 4.26 → 4.30 has no change here, so the iOS 27 SDK is the likely cause (not confirmed).
+- **Fix**: `presentation: "transparentModal"`, which uses no native sheet. Swipe-to-dismiss is lost.
+- **Seen in**: Pitstop, `expo-58-2026-11.md` #8.
+
 ### iOS: variable fonts tie with their sibling fonts
 - **Trigger**: a variable font (`fvar` table) bundled through `expo-font` that shares a family name with other bundled fonts or its own named versions. The tell is a filename such as `*_Medium-LC.ttf` alongside static files of the same family.
 - **Symptom**: upright text draws with the wrong version of the font, for example high contrast instead of normal contrast. It differs by iOS version: iOS 27 differs from 26.
@@ -176,6 +199,22 @@ An entry describes behaviour of a library, config key, SDK or toolchain, never o
 - **Fix**: wrap the text in `<Text>`, or make icon mocks text-free (`<View testID="…" />`) so their text doesn't collide with `getByText` regexes. The check is always on and matches device behaviour.
 - **Also**: snapshots with several root elements print as a fragment (`<>…</>`) instead of an array; update them once that's confirmed as the only difference.
 - **Seen in**: ICS Pro Coach, PR #772 (follow-up to `expo-58-2026-10.md`).
+
+### jest-expo 58 no longer provides `react-test-renderer`
+- **SDK**: 58
+- **Trigger**: `@testing-library/react-native` 13.x without `react-test-renderer` in `package.json`.
+- **Symptom**: every suite that imports RNTL fails with `Missing dev dependency "react-test-renderer@<react version>"`.
+- **Cause**: RNTL 13 was relying on the copy that `jest-expo` ≤57 depended on. `jest-expo` 58 switched to `test-renderer` (RNTL 14's).
+- **Fix**: add `react-test-renderer` as a devDependency pinned exactly to the React version, and re-pin it each hop. RNTL 14 removes the need (see above). SDK 58's `expo install --fix` also moves Jest to 30; align `babel-jest` / `jest-environment-node` by hand if they're direct devDependencies.
+- **Seen in**: Pitstop, `expo-58-2026-11.md` #2.
+
+### expo-asset 58 needs `setCustomSourceTransformer` on a mocked `Image.resolveAssetSource`
+- **SDK**: 58
+- **Trigger**: a Jest setup that replaces `Image.resolveAssetSource` with a plain `jest.fn` (common in Ignite-based apps).
+- **Symptom**: most suites fail to load with `TypeError: setTransformer is not a function` at `expo-asset/build/Asset.fx`.
+- **Cause**: expo-asset 58 calls `Image.resolveAssetSource.setCustomSourceTransformer` at import time. 57 imported RN's module directly.
+- **Fix**: `resolveAssetSource: Object.assign(jest.fn(() => mockFile), { setCustomSourceTransformer: jest.fn() })`.
+- **Seen in**: Pitstop, `expo-58-2026-11.md` #3.
 
 ### `waitFor(() => value)` doesn't wait
 - **Trigger**: `waitFor(() => ` with a callback that returns a value instead of asserting.
@@ -241,24 +280,33 @@ These failures only show up in a full Android compile, which usually means EAS. 
 - **Fix**: `patch-package` the library, appending `.toMutableMap()`. Known affected: `react-native-blurhash` ≤ 2.1.3 (no upstream fix as of 2026-07).
 - **Seen in**: Pitstop, `expo-57-2026-07.md` #11.
 
-### RN 0.86: bare `currentActivity` unresolved
-- **SDK**: 57 (RN 0.86)
+### RN 0.86 / 0.88: bare `currentActivity` unresolved
+- **SDK**: 57 (RN 0.86), and again at 58 (RN 0.88)
 - **Trigger**: unqualified `currentActivity` in a Kotlin module extending `ReactContextBaseJavaModule`.
-- **Symptom**: `Unresolved reference 'currentActivity'`, often followed by `runOnUiThread` errors.
+- **Symptom**: RN 0.86: `Unresolved reference 'currentActivity'`, often followed by `runOnUiThread` errors. RN 0.88: `Function invocation 'getCurrentActivity()' expected.`
 - **Cause**: the base class was rewritten in Kotlin, so the Java getter-as-property interop no longer applies.
-- **Fix**: upgrade to a version that qualifies it (`reactApplicationContext.currentActivity`), or patch the library. Known affected: `react-native-google-mobile-ads` < 16.4. Check the next entry before choosing a version.
-- **Seen in**: Pitstop, `expo-57-2026-07.md` #12.
+- **Fix**: upgrade to a version that qualifies it (`reactApplicationContext.currentActivity`), or patch the library. Known affected: `react-native-google-mobile-ads` < 16.4 on RN 0.86, and < 16.5 on RN 0.88 (16.0.0's `FullScreenAdModule`); 16.5.0 fixes both. Check the next entry before choosing a version.
+- **Seen in**: Pitstop, `expo-57-2026-07.md` #12, `expo-58-2026-11.md` #4.
 
 ### Kotlin metadata mismatch: pin the library, not the toolchain
 - **Trigger**: `Module was compiled with an incompatible version of Kotlin. The binary version of its metadata is X, expected version is Y`.
 - **Cause**: a library ships an AAR compiled with a newer Kotlin than the SDK's default (e.g. `play-services-ads` 25.x needs Kotlin 2.3; SDK 57 defaults to 2.1.20).
 - **Fix**: pin the library to the last version that bundles an older dependency (e.g. `react-native-google-mobile-ads` exactly `16.0.0` → `play-services-ads` 24.6.0). Raising `android.kotlinVersion` project-wide through `expo-build-properties` looks like it works, but it breaks modules that apply the Kotlin plugin the legacy way (`lottie-react-native`), because they still compile with an older compiler against the new stdlib.
-- **Seen in**: Pitstop, `expo-57-2026-07.md` #13.
+- **Recheck at each hop**: a Kotlin compiler reads metadata one version ahead of its own. SDK 58 builds with Kotlin 2.2.10, which reads 2.3 metadata, so the pin moved to `react-native-google-mobile-ads` 16.5.0 (`play-services-ads` 25.4.0). The Kotlin version in use is printed in the Gradle log.
+- **Seen in**: Pitstop, `expo-57-2026-07.md` #13, `expo-58-2026-11.md` #4.
 
 ### `compileSdk` 36
 - **Symptom**: `Dependency 'androidx.core:core:1.18.0' requires … compile against version 36 or later`.
 - **Fix**: set `compileSdkVersion: 36` and `buildToolsVersion: "36.0.0"` through `expo-build-properties`. For `targetSdkVersion`, see "Play Store target API level" under Store submission.
-- **Seen in**: Pitstop, `expo-57-2026-07.md` #14.
+- **Then remove it**: from RN 0.87 (SDK 58) the default `compileSdk` is 37, so a leftover pin of 36 forces it *down*. Drop the pin at that hop.
+- **Seen in**: Pitstop, `expo-57-2026-07.md` #14, `expo-58-2026-11.md` config changes.
+
+### AGP 9 disables `buildConfig` by default
+- **SDK**: 58 (RN 0.87+, AGP 9)
+- **Trigger**: `grep -rl "buildConfigField" node_modules/*/android node_modules/@*/*/android --include='*.gradle'`, in a library without `buildFeatures { buildConfig true }`.
+- **Symptom**: configuration fails: `A problem occurred configuring project ':<lib>'. defaultConfig contains custom BuildConfig fields, but the feature is disabled.`
+- **Fix**: upgrade the library, or `patch-package` its `build.gradle` to add `buildFeatures { buildConfig true }`. Known affected: `react-native-appsflyer` < 7.0.4.
+- **Seen in**: Pitstop, `expo-58-2026-11.md` #5.
 
 ### Autolinking drops imports for libraries that register several packages
 - **SDK**: 57 (RN 0.86; [facebook/react-native#55653](https://github.com/facebook/react-native/issues/55653))
@@ -287,7 +335,7 @@ These failures only show up in a full Android compile, which usually means EAS. 
 
 ## iOS native builds
 
-Local Xcode often can't build the newest SDK (SDK 56+ needs Xcode ≥ 26.4), so these may only show up on EAS.
+Local Xcode often can't build the newest SDK (SDK 56+ needs Xcode ≥ 26.4), so these may only show up on EAS. The tell for an Xcode that's too old: with SDK 58 and Xcode 26.3, the build fails in Expo's own `ExpoModulesJSI` script phase with `error: sending 'slot' risks causing data races` (and `unknown warning group: 'ImplicitStrongCapture'`), before any app pod links. So a local build can't check for the link errors below (seen in Pitstop, `expo-58-2026-11.md` #9).
 
 ### Dynamic frameworks expose pods with missing system frameworks
 - **Trigger**: `useFrameworks: "dynamic"`, which React Native Firebase 27+ requires.
