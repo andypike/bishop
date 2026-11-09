@@ -10,7 +10,7 @@ See `skills/feature-planning/SKILL.md` and `skills/ticket-workflow/SKILL.md` for
 
 It also upgrades Expo / React Native apps: one SDK hop at a time with a checkpoint commit after each, guided by the project's own `docs/upgrades/` history and a shared list of gotchas from past upgrades. Each upgrade writes its own record and adds what it learned to that shared list. See `skills/react-native-upgrade/SKILL.md`.
 
-Once a feature is planned, it can write the client's Statement of Work: it asks for the fee, VAT, payment terms, people and dates, takes the scope and exclusions from the Linear project, and publishes a one-page, Kyan-branded A4 SoW as a Design artifact, ready to export to PDF. See `skills/statement-of-work/SKILL.md`.
+Once a feature is planned, it can write the client's Statement of Work: it asks for the fee, VAT, payment terms, people and dates, takes the scope and exclusions from the Linear project, and publishes a Kyan-branded SoW as a Design artifact of A4 pages, ready to export to PDF. The page breaks fall between sections and are chosen by measuring the content. See `skills/statement-of-work/SKILL.md`.
 
 ## Prerequisites
 

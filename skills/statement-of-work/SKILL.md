@@ -1,13 +1,13 @@
 ---
 name: statement-of-work
-description: Create a client-facing Statement of Work (SoW) for a planned Linear project — ask for the commercial details (fee in GBP excluding VAT, VAT, payment terms and schedule, Kyan lead, build lead, client lead, start date and duration), derive the scope, exclusions and responsibilities from the project's feature document and tickets, and publish a one-page A4 Kyan-branded SoW as a Design artifact ready to export to PDF and send. Use when the user wants a statement of work, an SoW, a costed scope or proposal document for a client, usually after feature-planning has finished.
+description: Create a client-facing Statement of Work (SoW) for a planned Linear project — ask for the commercial details (fee in GBP excluding VAT, VAT, payment terms and schedule, Kyan lead, build lead, client lead, start date and duration), derive the scope, exclusions and responsibilities from the project's feature document and tickets, and publish a Kyan-branded SoW as a Design artifact of A4 pages, with content-aware page breaks, ready to export to PDF and send. Use when the user wants a statement of work, an SoW, a costed scope or proposal document for a client, usually after feature-planning has finished.
 ---
 
 # Statement of Work
 
-Turns a planned Linear project into the one-page Statement of Work (SoW) Kyan sends a client to approve: what it costs, when it happens, who's involved, and what is and isn't included. The commercial details come from the user. The scope comes from the project in Linear, normally written by `feature-planning`.
+Turns a planned Linear project into the Statement of Work (SoW) Kyan sends a client to approve: what it costs, when it happens, who's involved, and what is and isn't included. The commercial details come from the user. The scope comes from the project in Linear, normally written by `feature-planning`.
 
-The output is a **Design artifact**, a one-page A4 board with Kyan branding. It's built from [`references/statement-of-work/sow-template.dc.html`](../../references/statement-of-work/sow-template.dc.html). The user reviews it on claude.ai, adjusts it there if needed, and exports it to PDF to send.
+The output is a **Design artifact**: A4 pages with Kyan branding, one artboard per page, laid out to fit the content. It's built from [`references/statement-of-work/sow-template.dc.html`](../../references/statement-of-work/sow-template.dc.html). The user reviews it on claude.ai, adjusts it there if needed, and exports it to PDF to send.
 
 **Nothing is published until Phase 5.** Everything before that is conversation, so it's cheap to change.
 
@@ -115,34 +115,35 @@ Present the whole SoW as text: header details, the three cards, people, every se
 
 ## Phase 5 — Publish the Design artifact
 
-1. **Create the artifact.** Call the Artifact tool with `action: "quickstart"`, `intent: "design"` and `design_systems: false` (the SoW carries its own Kyan styling). Then publish with the Design `type_url` it returns, `title` = "<Client name> - <SoW title> - SOW", and `auto_open: "after_first_write"`. Follow the instructions the create result returns, including the rule never to verify by rendering or reading back.
+The SoW is published as **fixed A4 pages, one artboard per page**, so the PDF breaks exactly where the artboards do. The Design type's flowing print mode places its own page breaks and ignores CSS, so it's not used. Page breaks fall between sections, never inside one, and are chosen from measurements of the real content, so a long SoW and a short one both lay out cleanly.
+
+1. **Create the artifact.** Call the Artifact tool with `action: "quickstart"`, `intent: "design"` and `design_systems: false` (the SoW carries its own Kyan styling). Then publish with the Design `type_url` it returns, `title` = "<Client name> - <SoW title> - SOW", and `auto_open: "after_first_write"`. Follow the instructions the create result returns, including its rule never to render or read back the published canvas. Step 4's local measurement is this skill's own step on local files, not a check of the published canvas.
 2. **Copy the fonts.** Copy PP Mori from the template artifact with `action: "publish"`, `asset: true`, the new artifact's `url`, `from_url: "https://claude.ai/artifact/ENnbWV7iWjKWZgUHgBQjtD"` and `asset_ids`, in this order:
    - `43d5021273b281f54a338761b69f4d08` (400)
    - `05309c8ce73bed4248bfedfcb7947689` (500)
    - `b14f7cbc67cf920580513c8ee5b393a7` (600)
    
-   Use the returned URLs for `[[FONT_400_URL]]`, `[[FONT_500_URL]]` and `[[FONT_600_URL]]`. If the copy is refused, delete the three `@font-face` lines (the text falls back to Helvetica Neue) and tell the user.
-3. **Write the files** in a scratchpad folder, `<root>`:
-   - **`<root>/project/canvas.json`:**
-     ```json
-     {"v":3,"createdOnFiles":{"v":1,"at":"<now, ISO 8601 UTC>"},"title":"<Client name> - <SoW title> - SOW","launch":{"view":"focused","file":"Main.dc.html"},"pages":[],"boards":{"Main.dc.html":{"x":0,"y":0,"w":794,"h":<BOARD_HEIGHT>,"title":"Statement of Work","print":"flow","paper":"a4"}},"order":["Main.dc.html"],"notes":{},"designSystems":[]}
-     ```
-   - **`<root>/project/Main.dc.html`:** a copy of the template with every `[[TOKEN]]` filled in. For each `<!-- REPEAT … -->` block, write the block once per item, then delete the markers. No `[[` and no `<!--` may remain. HTML-escape the copy (`&` becomes `&amp;`, `'` becomes `&#x27;`). Fill the tokens as follows:
-     - `DOCUMENT_DATE` and `START_DATE` are written like "9 November 2026".
-     - `KYAN_SIGNATORY` and `CLIENT_SIGNATORY` are "Name, Job title".
-     - `NN` is a two-digit item number: 01, 02 and so on.
-     - `PLANNING_FR`, `BUILD_FR` and `TESTING_FR` are the timeline percentages.
-     - Every other token is the value its name gives, from Phases 2–4.
-   - **`BOARD_HEIGHT`:** estimate it, because the board can't be measured.
-     - Start from 2073 px, which is the template with 6 included items, 6 excluded items, and 4 responsibilities each.
-     - Add or subtract about 75 px per row of included items (2 items per row).
-     - Add or subtract about 25 px per row of excluded items.
-     - Add or subtract about 22 px per extra responsibility bullet in the longer list.
-     - Round up to the nearest 10. Use the same value in `canvas.json` and in the `$preview` height.
-4. **Publish** both files to the artifact's `url` with `root: "<root>"`, `file_path: "<root>/project/canvas.json"` and `files: {"project/Main.dc.html": "project/Main.dc.html"}`.
+   Use the returned URLs for `[[FONT_400_URL]]`, `[[FONT_500_URL]]` and `[[FONT_600_URL]]`. Then fetch each copy for measuring: `action: "read"` with the new artifact's `url` and `path` = the copy's asset id (the id in its `/_blob/<id>` URL). Each read saves a `.woff2` file locally and says where. If the copy is refused, delete the three `@font-face` lines (the text falls back to Helvetica Neue), tell the user, and use the default breaks in step 4.
+3. **Fill the template.** In a scratchpad folder, `<root>`, write `<root>/sow.dc.html`: a copy of the template with every `[[TOKEN]]` filled in. This is one long document. Step 4 cuts it into pages, and it's never published itself. For each `<!-- REPEAT … -->` block, write the block once per item, then delete the markers. No `[[` and no `<!--` may remain. Keep the `data-sow` and `data-block` attributes, because step 4 finds the sections by them. HTML-escape the copy (`&` becomes `&amp;`, `'` becomes `&#x27;`). Fill the tokens as follows:
+   - `DOCUMENT_DATE` and `START_DATE` are written like "9 November 2026".
+   - `KYAN_SIGNATORY` and `CLIENT_SIGNATORY` are "Name, Job title".
+   - `NN` is a two-digit item number: 01, 02 and so on.
+   - `PLANNING_FR`, `BUILD_FR` and `TESTING_FR` are the timeline percentages.
+   - Every other token is the value its name gives, from Phases 2–4.
+4. **Lay out the pages.** Run [`references/statement-of-work/paginate.py`](../../references/statement-of-work/paginate.py) from this skill's base directory:
+   ```
+   python3 -I <skill base>/../../references/statement-of-work/paginate.py <root>/sow.dc.html <root>/project \
+     --title "<Client name> - <SoW title> - SOW" \
+     --font-400 <400 file> --font-500 <500 file> --font-600 <600 file>
+   ```
+   It renders the document in headless Chrome with PP Mori and measures each section. It then fills the pages in order: a section moves to the next page only when it won't fit on the current one. That way no page ends with a gap the next section would have fitted in. The footer stays with "Agreement". The script writes `Main.dc.html`, `Page2.dc.html` and so on, plus `canvas.json`, into `<root>/project`. It then measures each finished page, fails if one overflows A4, and prints a report: each page's sections and its spare space in px.
+   - Chrome can't start inside Claude Code's sandbox, so run this command with the sandbox disabled.
+   - **A section is taller than a page:** the script stops and names it. Agree a shorter version of that section with the user (fewer or tighter items), update `sow.dc.html` and run it again.
+   - **No Chrome, or the fonts couldn't be copied:** run it with `--no-measure` in place of the font flags. It uses the default breaks (a new page after "What's included" and another before "Payment") without checking fit. Tell the user the layout wasn't measured and ask them to check that no page is cut off at the bottom.
+5. **Publish** to the artifact's `url` with `root: "<root>"`, `file_path: "<root>/project/canvas.json"` and `files` mapping every page file from the report, for example `{"project/Main.dc.html": "project/Main.dc.html", "project/Page2.dc.html": "project/Page2.dc.html", "project/Page3.dc.html": "project/Page3.dc.html"}`. When republishing an SoW that now has fewer pages, map each page file that's gone to `null`.
 
 ## Phase 6 — Handoff
 
-- **Give the user the link.** Tell them they can tweak the SoW on the canvas, then export the PDF via Share › Export.
+- **Give the user the link and the page plan.** Say which sections are on each page and how much space is left at the bottom of each. They can tweak the SoW on the canvas, then export the PDF via Share › Export › "All artboards (.pdf)", which exports the pages in order as one file. Edits on the canvas don't move the page breaks. If a change makes a page overflow or leaves a big gap, ask Claude to lay it out again (step 4, then step 5).
 - **Offer to link it in Linear.** Offer to add the SoW to the Linear project as a link titled "Statement of Work <version>", using `save_project` with `links`. Add it only if they say yes.
 - **List what still needs filling in.** Name every placeholder left in the document, such as a `[PLACEHOLDER]`, so nothing goes to the client unfinished.
