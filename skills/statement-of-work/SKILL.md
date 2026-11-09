@@ -74,12 +74,7 @@ Do the arithmetic yourself and show it in Phase 4, so the user can check it.
 **Money**
 - Format as `£3,200`. Show pence only when an amount isn't whole pounds (`£1,066.67`).
 - If an instalment split doesn't divide evenly, round each instalment to the penny and put any remainder on the last instalment, so the instalments add up exactly to the fee.
-- Instalment amounts **exclude VAT**.
-- **If VAT applies:**
-  - VAT amount = fee × rate;
-  - total = fee + VAT;
-  - the payment table shows the instalments, then "Fee, excluding VAT", then "VAT, 20%", then the total including VAT.
-- **If VAT doesn't apply:** the total is the fee, and the VAT rows are removed.
+- **Every figure on the SoW excludes VAT**: the fee card, each instalment and the total. The SoW never shows VAT amounts. The invoices are the tax documents and carry the VAT. If VAT applies, the fee note, total note and terms line say it's added to every invoice. This keeps every figure on the same basis, and stops the SoW and the invoices disagreeing over rate changes or rounding.
 
 **Timeline.** For D working days:
 - planning = max(1, round(D × planning%));
@@ -93,8 +88,8 @@ If build would be less than 1, D is too short for three phases: tell the user an
 | Field | VAT applies | No VAT |
 | --- | --- | --- |
 | Fee note | "Fixed, D days, plus VAT" | "Fixed, D days, no UK VAT" |
-| Total note | "Including VAT at R%" | "No UK VAT applies" |
-| Terms line | "Invoices payable within N days. VAT at R% is added to each invoice." | "Invoices payable within N days. No UK VAT, <reason>." |
+| Total note | "Excluding VAT" | "No UK VAT applies" |
+| Terms line | "All amounts exclude VAT, which is added to every invoice at R%. Invoices payable within N days." | "Invoices payable within N days. No UK VAT, <reason>." |
 
 - **Payment split:** the percentages joined with " / ", for example "50 / 50".
 - **Payment triggers:** the "when" of each instalment, joined, for example "On approval, on completion".
@@ -132,18 +127,17 @@ Present the whole SoW as text: header details, the three cards, people, every se
      ```json
      {"v":3,"createdOnFiles":{"v":1,"at":"<now, ISO 8601 UTC>"},"title":"<Client name> - <SoW title> - SOW","launch":{"view":"focused","file":"Main.dc.html"},"pages":[],"boards":{"Main.dc.html":{"x":0,"y":0,"w":794,"h":<BOARD_HEIGHT>,"title":"Statement of Work","print":"flow","paper":"a4"}},"order":["Main.dc.html"],"notes":{},"designSystems":[]}
      ```
-   - **`<root>/project/Main.dc.html`:** a copy of the template with every `[[TOKEN]]` filled in. For each `<!-- REPEAT … -->` block, write the block once per item, then delete the markers. Keep the `<!-- IF VAT APPLIES -->` rows only when VAT applies, and delete those markers too. No `[[` and no `<!--` may remain. HTML-escape the copy (`&` becomes `&amp;`, `'` becomes `&#x27;`). Fill the tokens as follows:
+   - **`<root>/project/Main.dc.html`:** a copy of the template with every `[[TOKEN]]` filled in. For each `<!-- REPEAT … -->` block, write the block once per item, then delete the markers. No `[[` and no `<!--` may remain. HTML-escape the copy (`&` becomes `&amp;`, `'` becomes `&#x27;`). Fill the tokens as follows:
      - `DOCUMENT_DATE` and `START_DATE` are written like "9 November 2026".
      - `KYAN_SIGNATORY` and `CLIENT_SIGNATORY` are "Name, Job title".
      - `NN` is a two-digit item number: 01, 02 and so on.
      - `PLANNING_FR`, `BUILD_FR` and `TESTING_FR` are the timeline percentages.
      - Every other token is the value its name gives, from Phases 2–4.
    - **`BOARD_HEIGHT`:** estimate it, because the board can't be measured.
-     - Start from 2073 px, which is the template with 6 included items, 6 excluded items, 4 responsibilities each and no VAT rows.
+     - Start from 2073 px, which is the template with 6 included items, 6 excluded items, and 4 responsibilities each.
      - Add or subtract about 75 px per row of included items (2 items per row).
      - Add or subtract about 25 px per row of excluded items.
      - Add or subtract about 22 px per extra responsibility bullet in the longer list.
-     - Add 90 px when the VAT rows are shown.
      - Round up to the nearest 10. Use the same value in `canvas.json` and in the `$preview` height.
 4. **Publish** both files to the artifact's `url` with `root: "<root>"`, `file_path: "<root>/project/canvas.json"` and `files: {"project/Main.dc.html": "project/Main.dc.html"}`.
 
