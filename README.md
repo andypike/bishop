@@ -2,11 +2,11 @@
 
 A Claude Code plugin for working Linear tickets: read the ticket, investigate the code, clarify the approach before writing anything, implement in small reviewed TDD batches (on a per-ticket branch, with a commit after each reviewed slice), then run a quality gate (tests, linters, mutation testing, style guide, code review) and a correctness-vs-ticket check before calling it done.
 
-The workflow is the same whatever the project is built with; each tech stack brings its own style guide, quality tools and environment from `stacks/`. Ruby on Rails is supported today. Each ticket is worked in one stack, chosen from its `stack:*` label in Linear or detected from the repo.
+The workflow is the same whatever the project is built with; each tech stack brings its own style guide, quality tools and environment from `stacks/`. Ruby on Rails and React Native (Expo) are supported today. Each ticket is worked in one stack, chosen from its `stack:*` label in Linear or detected from the repo.
 
 Before that, it can also help plan a new feature: give it a detailed brief plus any supporting material (docs, files, prototypes, meeting notes), and it investigates the codebase, proposes vertical-slice tickets, fleshes them out with you one at a time, designs the feature's architecture with you (following the style guide, with diagrams), and creates it all in a Linear project — ready to work one by one or in parallel.
 
-Tickets can be worked interactively, with a developer reviewing each step, or in **auto mode**: an orchestrator works through a Linear project's released tickets with headless agents in parallel, one git worktree and one set of databases per ticket. The agent stops for a developer only to approve its plan, when something genuinely needs a decision, or when a quality check still fails after two retries. It then opens a PR for review. Linear is the dashboard: ticket statuses and an `agent` label group show where every ticket is and which ones need a developer.
+Tickets can be worked interactively, with a developer reviewing each step, or in **auto mode**: an orchestrator works through a Linear project's released tickets with headless agents in parallel, one git worktree per ticket, kept apart as its stack needs (for Rails, its own databases). The agent stops for a developer only to approve its plan, when something genuinely needs a decision, or when a quality check still fails after two retries. It then opens a PR for review. Linear is the dashboard: ticket statuses and an `agent` label group show where every ticket is and which ones need a developer.
 
 See `skills/feature-planning/SKILL.md` and `skills/ticket-workflow/SKILL.md` for the full workflows.
 
@@ -21,6 +21,10 @@ Once a feature is planned, it can write the client's Statement of Work: it asks 
   - Target project uses RSpec or Minitest, and ideally already has RuboCop and RubyCritic configured (the workflow will ask before adding either).
   - [Evilution](https://github.com/marinazzio/evilution) for mutation testing — used instead of `mutant`, which requires a paid license for private code. Add `gem "evilution", group: :test` to the target project's Gemfile.
   - The project runs in Docker via `docker-compose`/`docker compose`. All Ruby/Rails commands (tests, RuboCop, RubyCritic, Evilution) run inside the container, never on the host — see `stacks/rails/environment.md`.
+- For React Native (Expo, TypeScript):
+  - Jest with the `jest-expo` preset and React Native Testing Library, TypeScript, ESLint and Prettier.
+  - [Stryker](https://stryker-mutator.io/) for mutation testing (`@stryker-mutator/core` and `@stryker-mutator/jest-runner` as dev dependencies) — experimental, so it can be skipped.
+  - Commands run on the host, under the Node version in `.nvmrc` — see `stacks/react-native/environment.md`. Builds and over-the-air updates stay with the developer.
 
 The prerequisites above are for the ticket workflows. `react-native-upgrade` runs on the host and needs no Linear or Docker. It needs the Node version from the project's `.nvmrc`, and ideally Xcode and the Android SDK. Whatever can't be built locally is verified with EAS builds.
 
@@ -34,7 +38,7 @@ The prerequisites above are for the ticket workflows. `react-native-upgrade` run
 - `agents/code-review-runner.md` — subagent that runs the built-in `code-review` skill against the diff. Also runs on Opus at high effort, so review quality doesn't depend on the main session's model.
 - `stacks/` — everything specific to a tech stack, one folder per stack, so the workflows themselves don't depend on one. `stacks/README.md` lists the supported stacks, what each must provide, and how to add one.
 - `references/stack-selection.md` — how each ticket's stack is chosen (its `stack:*` label, the feature document's `Stacks:` line, or detection) and announced.
-- `stacks/rails/stack.md` — how a Rails repo is detected.
+- `stacks/rails/` and `stacks/react-native/` — each stack's detection and delivery rules (`stack.md`), style guide, quality tools and environment.
 - `stacks/rails/style-guide.md` — the Rails style guide this workflow enforces, applied the same way across every project. Seeded from thoughtbot's Rails AI rules, edited to taste. Tune it whenever code review surfaces a preference that isn't written down yet — that's how review overhead goes down over time.
 - `references/quality-gates.md` — how the quality gate is judged: baseline vs after, and when each check runs.
 - `stacks/rails/quality-gates.md` — the Rails tools: exact commands and how to read each one's output.
@@ -97,7 +101,8 @@ Linear links a PR to its ticket from the ticket ID in the branch name (`ENG-123_
 
 ### Your project's repo
 
-- [ ] **Test and quality tools** for the project's stack, per its `quality-gates.md`. For Rails, in the Gemfile: RSpec or Minitest, RuboCop, RubyCritic, and Evilution.
+- [ ] **Test and quality tools** for the project's stack, per its `quality-gates.md`. For Rails, in the Gemfile: RSpec or Minitest, RuboCop, RubyCritic, and Evilution. For React Native, in `package.json`: Jest with `jest-expo`, React Native Testing Library, TypeScript, ESLint, Prettier, and Stryker.
+- [ ] **Node** (React Native): start the orchestrator under the project's `.nvmrc` Node version; every agent inherits it.
 - [ ] **Per-worker databases** (Rails): each environment has one database, and its name can be changed per worker, either through an environment variable read in `config/database.yml` or by `DATABASE_URL`. See `stacks/rails/environment.md`.
 - [ ] **Shared services written by tests** (Rails) can be separated per worker. For example, search index names can take a per-worker suffix. Otherwise the project runs one agent at a time. See `stacks/rails/environment.md`.
 - [ ] **Recommended**: in the repo's GitHub settings, "Automatically delete head branches", so merged ticket branches clean themselves up.

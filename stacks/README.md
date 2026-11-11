@@ -9,6 +9,7 @@ Each ticket is worked in exactly one stack, chosen per [`references/stack-select
 | Stack | ID | Folder |
 |---|---|---|
 | Ruby on Rails | `rails` | [`rails/`](./rails/) |
+| React Native (Expo) | `react-native` | [`react-native/`](./react-native/) |
 
 ## What a stack provides
 

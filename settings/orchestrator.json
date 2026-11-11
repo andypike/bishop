@@ -52,7 +52,14 @@
       "mcp__claude_ai_Linear__get_document",
       "mcp__claude_ai_Linear__save_document",
       "Bash(gh pr view *)",
-      "mcp__claude_ai_Linear__list_teams"
+      "mcp__claude_ai_Linear__list_teams",
+      "Bash(npm ci --prefix *)",
+      "Bash(yarn install --frozen-lockfile --cwd *)",
+      "Bash(yarn --cwd * install --immutable)",
+      "Bash(pnpm --dir * install --frozen-lockfile)",
+      "Bash(bun install --frozen-lockfile --cwd *)",
+      "Bash(node -v)",
+      "Bash(sysctl -n hw.ncpu)"
     ],
     "deny": [
       "Bash(git push --force *)",
@@ -74,7 +81,15 @@
       "Bash(gh pr merge *)",
       "Bash(gh api *)",
       "mcp__claude_ai_Linear__delete_comment",
-      "mcp__claude_ai_Linear__delete_attachment"
+      "mcp__claude_ai_Linear__delete_attachment",
+      "Bash(eas *)",
+      "Bash(npx eas *)",
+      "Bash(npx eas-cli *)",
+      "Bash(npx expo prebuild*)",
+      "Bash(npx expo run*)",
+      "Bash(npx expo start*)",
+      "Bash(just publish*)",
+      "Bash(just build*)"
     ]
   },
   "sandbox": {

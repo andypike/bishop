@@ -23,6 +23,8 @@ Every stack also gets the same two checks on top of its tools: the code review (
 
 The gate is **clean** when every check in the stack's table meets its "clean when", and every valid code review and style guide finding is resolved. The stack's **Metrics** section gives the lines the results take in the final comment and the PR body.
 
+A check marked **experimental** in the stack's table is still being evaluated. Run it and report its result with the others, but it never makes the gate unclean, never counts as a retry, and never parks a ticket. If it can't run at all, report it as not run, with why. Its results are how the developer decides whether it stays.
+
 A tool the developer chose to skip for the project (auto mode records this at preflight) isn't run: report it as skipped in the baseline, the final comment, and the PR, never just leave it out.
 
 ## Knowing a run has finished
