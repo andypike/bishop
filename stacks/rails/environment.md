@@ -67,7 +67,7 @@ For example — a fictitious project, `acme/shop`, checked out at `/home/dev/cod
 ```bash
 docker compose -p shop -f /home/dev/code/shop/docker-compose.yml run --rm \
   --entrypoint bundle \
-  -v /home/dev/.bishop/shop/worktrees/ENG-123:/usr/src/app \
+  -v /home/dev/.bishop/projects/csv_export/worktrees/ENG-123:/usr/src/app \
   -v /home/dev/code/shop/.git:/home/dev/code/shop/.git:ro \
   -e SHOP_DB_DATABASE=shop_development_eng123 -e SHOP_TEST_DB_DATABASE=shop_test_eng123 \
   web exec rails test TEST=test/helpers/price_helper_test.rb

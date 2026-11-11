@@ -128,7 +128,7 @@ Add `max_workers: <n>` after the project name to change how many agents run at o
 To see where each running agent is (its phase, slice, or quality check), run this in another terminal. It refreshes itself every 10 seconds, and flags an agent that has logged nothing for 20 minutes as `quiet`:
 
 ```bash
-/path/to/bishop/bin/agent-status        # all projects; or pass one repo's or project's folder under ~/.bishop
+/path/to/bishop/bin/agent-status        # all projects; or pass one project's folder under ~/.bishop/projects
 ```
 
 ### Menu bar app (macOS)

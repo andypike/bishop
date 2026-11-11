@@ -44,7 +44,7 @@ For each stack in the `Stacks:` line, run the "Preflight check" section of the s
 
 ## Project state
 
-On success, save the results to `~/.bishop/<repo>/<project-slug>/project.md`:
+On success, save the results to `~/.bishop/projects/<project-slug>/project.md`:
 
 - the epic branch
 - the project's stacks, from the `Stacks:` line, and for each one:
@@ -54,3 +54,5 @@ On success, save the results to `~/.bishop/<repo>/<project-slug>/project.md`:
 - that the GitHub automation was confirmed, and when
 
 Later runs reuse this file and repeat only the cheap checks (1–4, 6, 8, 9) unless a worker fails in a way that points at the saved setup.
+
+A `project.md` written before stacks existed has no stacks: run the full preflight again, and carry over its **Reviews** list (see `references/epic-review.md`) and anything else it records that preflight doesn't rebuild.

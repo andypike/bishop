@@ -9,16 +9,15 @@ Everything here runs from the project's main checkout, like the rest of the orch
 ## State
 
 ```
-~/.bishop/<repo>/
+~/.bishop/projects/<project-slug>/
   worktrees/epic-review/            the review's worktree, on the fix branch
-  <project-slug>/
-    epic-review-<n>/                one folder per review, numbered from 1
-      findings.md                   every finding, with the developer's decision
-      prompt.md                     the fixer's prompt
-      run-<n>.json, run-<n>.stderr  the fixer's output
-      pid                           the fixer's PID, while it runs
-      baseline.md, summary.md       written by the fixer
-      progress.md                   one line per step, as for a ticket
+  epic-review-<n>/                  one folder per review, numbered from 1
+    findings.md                     every finding, with the developer's decision
+    prompt.md                       the fixer's prompt
+    run-<n>.json, run-<n>.stderr    the fixer's output
+    pid                             the fixer's PID, while it runs
+    baseline.md, summary.md         written by the fixer
+    progress.md                     one line per step, as for a ticket
 ```
 
 `project.md` keeps a **Reviews** list: one line per review with its number, date, the epic SHA it reviewed, and the outcome (`declined`, `<n> fixed · <n> deferred`, or `fixes not pushed`). The orchestrator offers a review at finish only when the epic's current SHA (`git rev-parse origin/<epic branch>`) differs from the last one on that list, so a project that finishes twice without new merges isn't asked twice.

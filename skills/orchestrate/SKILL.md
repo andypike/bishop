@@ -41,20 +41,19 @@ Keep the session open while auto mode should run. Stopping the loop stops new wo
 Everything the orchestrator knows between ticks is in Linear or on disk, never in the conversation — each tick starts by reading it.
 
 ```
-~/.bishop/<repo>/
-  worktrees/<TICKET-ID>/            one git worktree per ticket
-  <project-slug>/
-    project.md                      preflight results (see references/preflight.md)
-    status.json                     tickets, labels and links for the menu bar app, rewritten every tick
-    <TICKET-ID>/
-      worker.md                     stack, branch, worktree, session ID, crash count, run count
-      prompt.md                     the worker's first prompt
-      run-<n>.json, run-<n>.stderr  output of each worker run
-      pid                           PID of the running worker, while one runs
-      baseline.md, pr-body.md, …    written by the worker itself
-      deployment-tasks.md           the ticket's deploy-time commands, written by the worker
-      progress.md                   one line per step, appended by the worker and the orchestrator
-    epic-review-<n>/                one folder per epic review (see references/epic-review.md)
+~/.bishop/projects/<project-slug>/
+  project.md                        preflight results (see references/preflight.md)
+  status.json                       tickets, labels and links for the menu bar app, rewritten every tick
+  worktrees/<TICKET-ID>/            one git worktree per ticket, in the repo of the ticket's stack
+  <TICKET-ID>/
+    worker.md                       stack, branch, worktree, session ID, crash count, run count
+    prompt.md                       the worker's first prompt
+    run-<n>.json, run-<n>.stderr    output of each worker run
+    pid                             PID of the running worker, while one runs
+    baseline.md, pr-body.md, …      written by the worker itself
+    deployment-tasks.md             the ticket's deploy-time commands, written by the worker
+    progress.md                     one line per step, appended by the worker and the orchestrator
+  epic-review-<n>/                  one folder per epic review (see references/epic-review.md)
 ```
 
 `progress.md` is what `bin/agent-status` shows. The worker's lines are defined in the ticket-workflow skill's "Progress log" section; the orchestrator appends its own, in the same format, at claim, resume and clean-up:
@@ -63,7 +62,7 @@ Everything the orchestrator knows between ticks is in Linear or on disk, never i
 echo "$(date +%H:%M) · Claimed · <ticket branch>" >> <ticket state dir>/progress.md
 ```
 
-`<repo>` is the repo's name on GitHub; `<project-slug>` is the Linear project's name in lowercase snake_case.
+`<project-slug>` is the Linear project's name in lowercase snake_case. State belongs to the project, not a repo: a project can span repos, and the orchestrator can be started from any of them.
 
 ## Each tick
 
