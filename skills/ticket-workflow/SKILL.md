@@ -9,9 +9,9 @@ A staged workflow for taking a Linear ticket from "assigned" to "implemented, ve
 
 Two reference files this workflow depends on, kept in this plugin so they're consistent across every project:
 
-- [`style-guide/rails-style-guide.md`](../../style-guide/rails-style-guide.md) — what good code looks like here. Applies in Phase 5 (implementation) and Phase 6 (quality gate).
-- [`references/quality-gates.md`](../../references/quality-gates.md) — exact commands, baseline mechanics, and how each tool is interpreted. Read this before running any check.
-- [`references/docker.md`](../../references/docker.md) — every project runs inside Docker Compose; this covers detecting the compose setup and how to wrap every command. Read this before running anything at all, including the baseline capture.
+- [`stacks/rails/style-guide.md`](../../stacks/rails/style-guide.md) — what good code looks like here. Applies in Phase 5 (implementation) and Phase 6 (quality gate).
+- [`references/quality-gates.md`](../../references/quality-gates.md) and [`stacks/rails/quality-gates.md`](../../stacks/rails/quality-gates.md) — how the gate is judged (baseline vs after), then the exact commands and how each tool is interpreted. Read both before running any check.
+- [`stacks/rails/environment.md`](../../stacks/rails/environment.md) — every project runs inside Docker Compose; this covers detecting the compose setup and how to wrap every command. Read this before running anything at all, including the baseline capture.
 - [`references/git.md`](../../references/git.md) — epic and ticket branches, per-slice commits, pushing, and opening the PR. Read this before Phase 5 — nothing gets written until the branch is settled.
 - [`references/architecture.md`](../../references/architecture.md) — what the feature's architecture document settles, and how a ticket raises a change to it. Read this in Phase 1 when the ticket links to one.
 
@@ -93,14 +93,14 @@ Read-only exploration of the target codebase:
 - Find the files, models, controllers, and existing tests relevant to the ticket.
 - Identify existing patterns worth reusing (don't propose new abstractions where a suitable one already exists).
 - Note which parts of the style guide are most relevant to this change.
-- **Tool detection**: check whether RSpec/Minitest, RuboCop, RubyCritic, and Evilution are configured (see `quality-gates.md`). If something's missing, flag it and ask before adding it as a dev dependency.
-- **Docker detection**: find the compose file, confirm `docker compose` vs `docker-compose`, and identify the app service (see `docker.md`). Every command from here on — baseline capture included — runs through this, not on the host.
+- **Tool detection**: check whether RSpec/Minitest, RuboCop, RubyCritic, and Evilution are configured (see `stacks/rails/quality-gates.md`). If something's missing, flag it and ask before adding it as a dev dependency.
+- **Docker detection**: find the compose file, confirm `docker compose` vs `docker-compose`, and identify the app service (see `stacks/rails/environment.md`). Every command from here on — baseline capture included — runs through this, not on the host.
 
-**As soon as investigation is far enough along to know what to run, kick off baseline metric capture in the background** (full test suite + coverage, RuboCop, RubyCritic — commands in `quality-gates.md`). These can be slow; don't block the conversation on them. Mutation testing is *not* run here — there's no diff yet to mutate against.
+**As soon as investigation is far enough along to know what to run, kick off baseline metric capture in the background** (full test suite + coverage, RuboCop, RubyCritic — commands in `stacks/rails/quality-gates.md`). These can be slow; don't block the conversation on them. Mutation testing is *not* run here — there's no diff yet to mutate against.
 
 **Auto mode:**
 
-- Run every command through the worker setup in `references/docker.md` — the worker's own app container and databases, never the shared service via `exec`.
+- Run every command through the worker setup in `stacks/rails/environment.md` — the worker's own app container and databases, never the shared service via `exec`.
 - Preflight guarantees the quality tools are installed, except any your prompt says the developer skipped for this project: leave those out and report them as skipped in the baseline and the PR. If another tool is missing anyway, park with `agent:needs-input` rather than adding it.
 - The worker exits when it parks at the plan gate, so the baseline must outlive this run: let it finish before parking, and write its results to `<state dir>/baseline.md`. Run it in the foreground, per "Knowing a run has finished" in `references/quality-gates.md`.
 
@@ -138,12 +138,12 @@ This is the core loop, and it must stay small-batch — **never write the whole 
 1. Pick the smallest next slice of behavior (one method, one branch, one scenario — not "the whole feature").
 2. Write failing test(s) for *only* that slice, following the Testing section of the style guide.
 3. **Gate**: present the test(s) to the user for review before implementing anything. Wait for approval or feedback.
-4. Implement the minimal code to make those tests pass — simplest correct implementation, not the final polished version. Follow the style guide at `style-guide/rails-style-guide.md`
+4. Implement the minimal code to make those tests pass — simplest correct implementation, not the final polished version. Follow the style guide at `stacks/rails/style-guide.md`
 5. **Gate**: present the implementation for review.
 6. **Gate**: ask whether to commit this slice. If approved, re-check the branch (per `git.md`) and commit with a short, specific message.
 7. Repeat from step 1 until the ticket's behavior is covered.
 
-If the user's review feedback implies a style guide gap (something they correct that isn't written down), suggest adding it to `style-guide/rails-style-guide.md` — that's how review burden goes down over time.
+If the user's review feedback implies a style guide gap (something they correct that isn't written down), suggest adding it to `stacks/rails/style-guide.md` — that's how review burden goes down over time.
 
 Only after this loop is quality-gate work appropriate — don't run RuboCop, RubyCritic, or mutation testing mid-loop; they're a Phase 6 concern.
 
@@ -157,14 +157,14 @@ Only after this loop is quality-gate work appropriate — don't run RuboCop, Rub
 
 ## Phase 6 — Quality gate
 
-Follow `references/quality-gates.md` exactly for commands and interpretation. In summary:
+Follow `references/quality-gates.md` and `stacks/rails/quality-gates.md` exactly for commands and interpretation. In summary:
 
 - Full test suite (must be green).
 - RuboCop: auto-fix safe offenses (`-a`, never `-A`), report what's left. Offense count must not exceed baseline.
 - RubyCritic: score must not regress vs baseline.
 - Evilution: mutation testing scoped to just the changed files/lines. No baseline comparison (nothing to mutate before the change existed) — judge survivors on their own merits.
 - Invoke the `code-review-runner` agent (via the Agent tool) against the diff for reuse/simplification/efficiency findings — runs the `code-review` skill on Opus at high effort, rather than calling the skill directly in the main session.
-- Style guide checklist: walk the diff against `style-guide/rails-style-guide.md`.
+- Style guide checklist: walk the diff against `stacks/rails/style-guide.md`.
 - Architecture check, when the ticket has an architecture document: the diff builds the components this ticket introduces with the document's names, layers and responsibilities, uses other tickets' components rather than re-creating them, and follows its shared-file conventions. A departure that wasn't approved is a finding.
 
 **Gate**: report baseline-vs-after plus all findings to the user. If anything needs fixing, loop back into Phase 5 for that fix (small batch, reviewed), then re-run the affected checks — don't re-run everything from scratch unless the fix was broad.

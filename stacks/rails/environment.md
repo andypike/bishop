@@ -108,7 +108,7 @@ Preflight looks for this — a search gem in the `Gemfile`, plus index setup or 
 
 ### Mutation testing (orchestrator, at preflight)
 
-Evilution needs two things the rest of the worker's commands don't (see "Parallel jobs and the test database" and "Coverage" in `references/quality-gates.md`):
+Evilution needs two things the rest of the worker's commands don't (see "Parallel jobs and the test database" and "Coverage" in [`quality-gates.md`](./quality-gates.md)):
 
 - **Mutation prefix** — if the worker prefix turns on a coverage tool (for example `-e COVERAGE=true` for SimpleCov), record a copy without it. Workers run Evilution, and its database setup, through the mutation prefix, and everything else through the worker prefix. Setting the variable to an empty value isn't the same as leaving it out: a test helper that checks `if ENV['COVERAGE']` treats `""` as on. If the worker prefix doesn't turn on coverage, the two are the same.
 - **Per-job databases** — if the project has a command that copies the test database once per Evilution job, record it, with `<jobs>` as a placeholder, and the job count: `nproc` inside the container divided by the maximum active workers, capped at 8 and no less than 2. Record the names the copies take, so clean-up can drop them. If the project has no such command, record `--jobs 1`, and say what the project would need.

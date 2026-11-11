@@ -17,7 +17,7 @@ Once a feature is planned, it can write the client's Statement of Work: it asks 
 - A Linear MCP connector configured in the Claude Code session (used to read and create tickets, create feature documents, and post comments).
 - Target project uses RSpec or Minitest, and ideally already has RuboCop and RubyCritic configured (the workflow will ask before adding either).
 - [Evilution](https://github.com/marinazzio/evilution) for mutation testing — used instead of `mutant`, which requires a paid license for private code. Add `gem "evilution", group: :test` to the target project's Gemfile.
-- The project runs in Docker via `docker-compose`/`docker compose`. All Ruby/Rails commands (tests, RuboCop, RubyCritic, Evilution) run inside the container, never on the host — see `references/docker.md`.
+- The project runs in Docker via `docker-compose`/`docker compose`. All Ruby/Rails commands (tests, RuboCop, RubyCritic, Evilution) run inside the container, never on the host — see `stacks/rails/environment.md`.
 
 The prerequisites above are for the Rails workflows. `react-native-upgrade` runs on the host and needs no Linear or Docker. It needs the Node version from the project's `.nvmrc`, and ideally Xcode and the Android SDK. Whatever can't be built locally is verified with EAS builds.
 
@@ -29,9 +29,10 @@ The prerequisites above are for the Rails workflows. `react-native-upgrade` runs
 - `references/statement-of-work/sow-template.dc.html` — the Kyan SoW layout the skill fills in (one A4 Design board).
 - `agents/correctness-checker.md` — subagent that checks the final diff against the original ticket and decision log. Runs on Opus at high effort.
 - `agents/code-review-runner.md` — subagent that runs the built-in `code-review` skill against the diff. Also runs on Opus at high effort, so review quality doesn't depend on the main session's model.
-- `style-guide/rails-style-guide.md` — the style guide this workflow enforces, applied the same way across every project. Seeded from thoughtbot's Rails AI rules, edited to taste. Tune it whenever code review surfaces a preference that isn't written down yet — that's how review overhead goes down over time.
-- `references/quality-gates.md` — exact commands and how baseline-vs-after comparison works for each tool.
-- `references/docker.md` — detecting the Docker Compose setup and wrapping every command to run inside the container, including the per-worker container and databases used in auto mode.
+- `stacks/rails/style-guide.md` — the Rails style guide this workflow enforces, applied the same way across every project. Seeded from thoughtbot's Rails AI rules, edited to taste. Tune it whenever code review surfaces a preference that isn't written down yet — that's how review overhead goes down over time.
+- `references/quality-gates.md` — how the quality gate is judged: baseline vs after, and when each check runs.
+- `stacks/rails/quality-gates.md` — the Rails tools: exact commands and how to read each one's output.
+- `stacks/rails/environment.md` — detecting the Docker Compose setup and wrapping every command to run inside the container, including the per-worker container and databases used in auto mode.
 - `references/ticket-template.md` — the ticket and feature document structure `feature-planning` writes, and what makes a ticket a good single slice.
 - `references/architecture.md` — the feature's architecture document: what it settles, how it's built from the style guide, its Mermaid diagrams, and how tickets follow it.
 - `references/git.md` — the epic branch, ticket branches (`<TICKET-ID>_brief_summary`), per-slice commits, pushing, and opening the PR. Merging stays with the developer.
@@ -91,8 +92,8 @@ Linear links a PR to its ticket from the ticket ID in the branch name (`ENG-123_
 ### Your project's repo
 
 - [ ] **Test and quality tools** in the Gemfile: RSpec or Minitest, RuboCop, RubyCritic, and Evilution.
-- [ ] **Per-worker databases**: each environment has one database, and its name can be changed per worker, either through an environment variable read in `config/database.yml` or by `DATABASE_URL`. See `references/docker.md`.
-- [ ] **Shared services written by tests** can be separated per worker. For example, search index names can take a per-worker suffix. Otherwise the project runs one agent at a time. See `references/docker.md`.
+- [ ] **Per-worker databases**: each environment has one database, and its name can be changed per worker, either through an environment variable read in `config/database.yml` or by `DATABASE_URL`. See `stacks/rails/environment.md`.
+- [ ] **Shared services written by tests** can be separated per worker. For example, search index names can take a per-worker suffix. Otherwise the project runs one agent at a time. See `stacks/rails/environment.md`.
 - [ ] **Recommended**: in the repo's GitHub settings, "Automatically delete head branches", so merged ticket branches clean themselves up.
 
 ### Planning for auto mode

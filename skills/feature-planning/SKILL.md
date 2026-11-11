@@ -14,7 +14,7 @@ References this workflow depends on:
 - [`references/ticket-template.md`](../../references/ticket-template.md) — the structure every ticket description and the feature document follow, and what makes a ticket a good single slice. Read this before Phase 4.
 - [`references/git.md`](../../references/git.md) — the epic branch: naming, and how to create it. Read this before proposing the epic branch name in Phase 3.
 - [`references/architecture.md`](../../references/architecture.md) — what the architecture document settles, how it's built from the style guide, its diagrams and template. Read this before Phase 6.
-- [`style-guide/rails-style-guide.md`](../../style-guide/rails-style-guide.md) — the design rules the architecture follows. Read this before Phase 6.
+- [`stacks/rails/style-guide.md`](../../stacks/rails/style-guide.md) — the design rules the architecture follows. Read this before Phase 6.
 
 **Adding architecture to an existing project.** Preflight blocks auto mode on a project without an architecture document. To add one to a project planned before this phase existed, run Phase 1 (the existing feature document and tickets are the brief), Phase 2, then Phases 6–8 against the existing tickets: Phase 8 creates only the architecture document, links it from the feature document, and adds its link to each ticket that isn't Done yet — plus any `blockedBy` links or ticket changes Phase 6 agreed.
 

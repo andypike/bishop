@@ -33,11 +33,11 @@ Run every check, then report them all together, so the developer can fix everyth
 
 ## Docker
 
-Work through "Working out the prefix" in `references/docker.md`, then:
+Work through "Working out the prefix" in `stacks/rails/environment.md`, then:
 
-12. **Worker prefix** — build it, with a placeholder for the ticket, and run the database check from `docker.md` using `preflight` as the ticket. It must print `<test db name>_preflight` (and the development name, for `DATABASE_URL` projects). Check every other database the app connects to as well, per `docker.md`: each must resolve to a per-worker name. ❌ if the primary database can't be separated, explaining the `database.yml` change the project needs. ⚠️ if only a secondary database can't be: the project runs with one worker.
-13. **Shared services** — per "Shared services that tests write to" in `docker.md`. ⚠️ if tests write to a shared service that can't be separated per worker: the project runs with **one** active worker until it can. Say what the project needs to add.
-14. **Gitignored files** — list the files to copy into each new worktree, per `docker.md`. Show the list so the developer can spot anything missing or anything that shouldn't be copied.
+12. **Worker prefix** — build it, with a placeholder for the ticket, and run the database check from `stacks/rails/environment.md` using `preflight` as the ticket. It must print `<test db name>_preflight` (and the development name, for `DATABASE_URL` projects). Check every other database the app connects to as well, per `stacks/rails/environment.md`: each must resolve to a per-worker name. ❌ if the primary database can't be separated, explaining the `database.yml` change the project needs. ⚠️ if only a secondary database can't be: the project runs with one worker.
+13. **Shared services** — per "Shared services that tests write to" in `stacks/rails/environment.md`. ⚠️ if tests write to a shared service that can't be separated per worker: the project runs with **one** active worker until it can. Say what the project needs to add.
+14. **Gitignored files** — list the files to copy into each new worktree, per `stacks/rails/environment.md`. Show the list so the developer can spot anything missing or anything that shouldn't be copied.
 
 ## Headless agent
 
@@ -50,7 +50,7 @@ On success, save the results to `~/.bishop/<repo>/<project-slug>/project.md`:
 - the epic branch
 - the worker prefix template (and the development prefix, for `DATABASE_URL` projects)
 - per-worker databases the orchestrator must create at claim and drop at clean-up, with the service each lives on
-- the mutation prefix, the per-job database command and the job count (or `--jobs 1`), per "Mutation testing" in `references/docker.md`
+- the mutation prefix, the per-job database command and the job count (or `--jobs 1`), per "Mutation testing" in `stacks/rails/environment.md`
 - quality tools skipped for this project
 - the files to copy into each worktree
 - the maximum active workers: the orchestrator's setting (default 2), or 1 if check 13 warned

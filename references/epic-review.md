@@ -112,7 +112,7 @@ Report each finding's outcome — fixed with its commit, or skipped and why. Rec
 
 ## 6. Finish
 
-1. Unless the fix branch was left for the developer: remove the review worktree (`git worktree remove`, without `--force`), delete the fix branch (`git branch -D <fix branch>`), and drop the review's databases per "Cleaning up" in `references/docker.md`.
+1. Unless the fix branch was left for the developer: remove the review worktree (`git worktree remove`, without `--force`), delete the fix branch (`git branch -D <fix branch>`), and drop the review's databases per "Cleaning up" in `stacks/rails/environment.md`.
 2. Add the review to the Reviews list in `project.md`, with the epic SHA after any push.
 3. Append `Cleaned up · review <n>` to `progress.md`.
 4. End with a short summary: findings fixed and pushed, findings deferred and where they were recorded, and anything left for the developer.
@@ -124,7 +124,7 @@ Report each finding's outcome — fixed with its commit, or skipped and why. Rec
 Log progress to `<state dir>/progress.md` the way the ticket-workflow skill's "Progress log" section describes, with `Fix <number>` in place of a slice.
 
 1. **Check the branch**: `git branch --show-current` must be the fix branch in the prompt. If it isn't, write that in `summary.md` and exit.
-2. **Baseline**: capture tests, RuboCop and RubyCritic per `references/quality-gates.md`, through the Docker prefix, and write them to `baseline.md`.
+2. **Baseline**: capture tests, RuboCop and RubyCritic per `stacks/rails/quality-gates.md`, through the Docker prefix, and write them to `baseline.md`.
 3. **Each finding**, in number order:
    1. Read it in `findings.md`, then check it against the real source. If it isn't real, skip it: say what you checked.
    2. If fixing it needs a decision the review didn't settle — a choice between behaviours, a change to the architecture document, a migration on data the client already has — skip it and say what needs deciding.
@@ -132,4 +132,4 @@ Log progress to `<state dir>/progress.md` the way the ticket-workflow skill's "P
 4. **Quality gate**: run Phase 6 of the ticket-workflow skill in auto mode against your baseline and your diff from the epic (`git diff origin/<epic branch>...HEAD`), with up to two retries. Skip the architecture check unless a fix touched a component the architecture document describes.
 5. **Write `summary.md`**: whether the gate is clean (and if not, what still fails), then every listed finding with its outcome — fixed (commit SHA and one line on the fix) or skipped (why) — and the gate's figures against the baseline.
 
-Follow `style-guide/rails-style-guide.md`, as for any ticket.
+Follow `stacks/rails/style-guide.md`, as for any ticket.
