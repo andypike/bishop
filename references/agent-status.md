@@ -43,6 +43,10 @@ A single-select label group named `agent` on the team. 🔴 marks the states whe
 | `agent:answered` | developer | Developer has responded to a 🔴 state or a plan; resume the worker. |
 | `agent:pr-open` | worker | PR created and linked; developer reviews and merges. If the PR stops merging cleanly, the orchestrator swaps back to `agent:working` and the worker resolves it. |
 
+## The `stack` label group
+
+A second single-select group, `stack`, says which tech stack a ticket is built in: `stack:rails`, and so on (see `references/stack-selection.md`). `feature-planning` sets it when it creates the ticket, or a developer does. Agents never change it, so it needs no swap.
+
 ## Changing the label: always a swap
 
 Linear rejects adding a second label from a single-select group (`400: Only one label in a group can be applied to an issue`), so every change is a **swap**:

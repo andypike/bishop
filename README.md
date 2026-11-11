@@ -29,6 +29,9 @@ The prerequisites above are for the Rails workflows. `react-native-upgrade` runs
 - `references/statement-of-work/sow-template.dc.html` — the Kyan SoW layout the skill fills in (one A4 Design board).
 - `agents/correctness-checker.md` — subagent that checks the final diff against the original ticket and decision log. Runs on Opus at high effort.
 - `agents/code-review-runner.md` — subagent that runs the built-in `code-review` skill against the diff. Also runs on Opus at high effort, so review quality doesn't depend on the main session's model.
+- `stacks/` — everything specific to a tech stack, one folder per stack, so the workflows themselves don't depend on one. `stacks/README.md` lists the supported stacks, what each must provide, and how to add one.
+- `references/stack-selection.md` — how each ticket's stack is chosen (its `stack:*` label, the feature document's `Stacks:` line, or detection) and announced.
+- `stacks/rails/stack.md` — how a Rails repo is detected.
 - `stacks/rails/style-guide.md` — the Rails style guide this workflow enforces, applied the same way across every project. Seeded from thoughtbot's Rails AI rules, edited to taste. Tune it whenever code review surfaces a preference that isn't written down yet — that's how review overhead goes down over time.
 - `references/quality-gates.md` — how the quality gate is judged: baseline vs after, and when each check runs.
 - `stacks/rails/quality-gates.md` — the Rails tools: exact commands and how to read each one's output.

@@ -13,7 +13,8 @@ References:
 
 - [`references/agent-status.md`](../../references/agent-status.md) — statuses, labels, the claim rules, and the label **swap**. Every label change here follows it.
 - [`references/preflight.md`](../../references/preflight.md) — the checks run before any work starts, and the project state they produce.
-- [`stacks/rails/environment.md`](../../stacks/rails/environment.md) — the worker prefix and per-worker databases.
+- [`references/stack-selection.md`](../../references/stack-selection.md) — how each ticket's stack is chosen at claim.
+- `stacks/<stack>/environment.md` — for each stack the project uses: the worker prefix and per-worker databases.
 - [`references/git.md`](../../references/git.md) — the epic branch, ticket branch names, and creating worktrees.
 - [`references/epic-review.md`](../../references/epic-review.md) — the optional review of the whole epic once the project finishes, and fixing what it finds.
 
@@ -46,7 +47,7 @@ Everything the orchestrator knows between ticks is in Linear or on disk, never i
     project.md                      preflight results (see references/preflight.md)
     status.json                     tickets, labels and links for the menu bar app, rewritten every tick
     <TICKET-ID>/
-      worker.md                     branch, worktree, session ID, crash count, run count
+      worker.md                     stack, branch, worktree, session ID, crash count, run count
       prompt.md                     the worker's first prompt
       run-<n>.json, run-<n>.stderr  output of each worker run
       pid                           PID of the running worker, while one runs
@@ -108,7 +109,7 @@ For each ticket that has a `worker.md` not yet marked cleaned up, and whose Line
 2. **Record deployment tasks** — skip for Canceled, or if `worker.md` already marks them recorded (a re-claim after Rejected writes a fresh `worker.md`, so rework gets recorded too). Read `<ticket state dir>/deployment-tasks.md`, then merge its commands into the **Deployment tasks** section of the feature document, per "Deployment tasks" in `references/ticket-template.md`: fetch the document fresh, add only lines that aren't already there, and save it. Then mark them recorded in `worker.md`. If the file is missing, read the list from the PR body's Deployment tasks section instead (`gh pr view <branch> --json body`), and say so in the report.
 3. Remove the worktree: `git worktree remove <worktree>`. Without `--force`: if git refuses because of uncommitted changes, leave the worktree, report it, and carry on with the rest.
 4. Delete the local ticket branch: `git branch -D <ticket branch>`.
-5. Drop the worker's databases, per "Cleaning up" in `stacks/rails/environment.md`.
+5. Drop the worker's databases, per "Cleaning up" in the stack's `environment.md`.
 6. Remove the ticket's `agent:*` label (`removeLabels` only — there's nothing to swap to).
 7. Mark `worker.md` cleaned up and append `Cleaned up · <status>` to `progress.md`. Keep the ticket folder: its run logs are the record of what happened.
 
@@ -144,11 +145,12 @@ Skip this step while the project is paused or no slot is free.
 1. List the project's issues once, with status, labels, priority, and relations. Find the claimable tickets per the rules in `references/agent-status.md`. A blocker in another project isn't in the listing: fetch it individually.
 2. Take them in order: priority (Urgent first, no priority last); at equal priority, Rejected before Todo; then oldest first.
 3. For each, while a slot is free:
-   1. **Claim it** — one `save_issue` call that sets the status to In Progress and swaps `agent:claimable` for `agent:planning`. If the swap fails, someone changed the ticket in the meantime: skip it this tick.
-   2. **Name the branch** per `references/git.md`, summarising the ticket's title. For a Rejected ticket, use the `_feedback_` form, summarising what the developer's rejection comments ask for.
-   3. **Create the worktree** from the epic branch, per the auto mode section of `references/git.md`, and copy in the files listed in `project.md`. Create any per-worker databases `project.md` lists for the orchestrator to create (see `stacks/rails/environment.md`).
-   4. **Write `worker.md` and `prompt.md`**, from the template below, and append `Claimed · <ticket branch>` to `progress.md`.
-   5. **Start the worker.**
+   1. **Choose its stack**, per "In auto mode" in `references/stack-selection.md`. A ticket that needs a `stack:*` label and has none isn't claimable: skip it and say so in the report.
+   2. **Claim it** — one `save_issue` call that sets the status to In Progress and swaps `agent:claimable` for `agent:planning`. If the swap fails, someone changed the ticket in the meantime: skip it this tick.
+   3. **Name the branch** per `references/git.md`, summarising the ticket's title. For a Rejected ticket, use the `_feedback_` form, summarising what the developer's rejection comments ask for.
+   4. **Create the worktree** from the epic branch, per the auto mode section of `references/git.md`, and copy in the files listed in `project.md`. Create any per-worker databases `project.md` lists for the orchestrator to create (see the stack's `environment.md`).
+   5. **Write `worker.md` and `prompt.md`**, from the template below, and append `Claimed · <ticket branch>` to `progress.md`.
+   6. **Start the worker.**
 
 ### Worker prompt
 
@@ -157,6 +159,7 @@ Use the bishop:ticket-workflow skill in auto mode to work Linear ticket <TICKET-
 
 - mode: auto
 - ticket: <TICKET-ID>, in the Linear project "<project>". The orchestrator has claimed it: status In Progress, label agent:planning.
+- stack: <stack ID> — use the files in <plugin root>/stacks/<stack ID>/.
 - worktree: <worktree> (your current directory), on branch <ticket branch>, cut from <epic branch>.
 - epic branch: <epic branch>
 - state directory: <ticket state dir>
@@ -168,7 +171,7 @@ Docker: put this prefix in front of every Ruby/Rails command — tests, RuboCop,
 Run until you park the ticket or open the PR, then exit.
 ```
 
-For a `DATABASE_URL` project, add the development prefix after the test prefix, introduced as: `Development database — only for db:prepare and migrations, never for tests:`. Add the mutation testing settings from `project.md` (see "Mutation testing" in `stacks/rails/environment.md`): if the mutation prefix differs from the test prefix, add it, introduced as `Mutation testing — run Evilution and its database setup through this prefix instead (coverage off):`; then either `Before each Evilution run in Phase 6, copy the test database once per job: <per-job database command>, then pass --jobs <n>.` or `Run Evilution with --jobs 1: this project's test database isn't copied per job.` If `project.md` lists skipped quality tools, add: `Skipped for this project by the developer: <tools>. Don't run them; report them as skipped in the baseline and the PR.` For a Rejected ticket, add to the ticket line: `This is rework after QA: the developer's comments since the last merge are the scope.`
+For a `DATABASE_URL` project, add the development prefix after the test prefix, introduced as: `Development database — only for db:prepare and migrations, never for tests:`. Add the mutation testing settings from `project.md` (see "Mutation testing" in the stack's `environment.md`): if the mutation prefix differs from the test prefix, add it, introduced as `Mutation testing — run Evilution and its database setup through this prefix instead (coverage off):`; then either `Before each Evilution run in Phase 6, copy the test database once per job: <per-job database command>, then pass --jobs <n>.` or `Run Evilution with --jobs 1: this project's test database isn't copied per job.` If `project.md` lists skipped quality tools, add: `Skipped for this project by the developer: <tools>. Don't run them; report them as skipped in the baseline and the PR.` For a Rejected ticket, add to the ticket line: `This is rework after QA: the developer's comments since the last merge are the scope.`
 
 ## Step 6 — Report
 

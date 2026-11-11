@@ -12,7 +12,7 @@ The test for whether something belongs here: would two tickets need to agree on 
 
 ## Building it from the style guide
 
-The style guide (`stacks/rails/style-guide.md`) is the starting point for every design choice. Walk its high-level sections against the feature, and record in **Style guide** how each one shapes the design:
+The stack's style guide (`stacks/<stack>/style-guide.md`) is the starting point for every design choice. Walk its high-level sections against the feature, and record in **Style guide** how each one shapes the design:
 
 - **Controllers** — which resources and RESTful routes the feature adds; a custom verb action is a missing resource.
 - **Models & Domain Objects** — the domain nouns; which operations are commands in `app/commands`; which concepts deserve a PORO rather than growing an existing model.

@@ -11,6 +11,10 @@ The structure `feature-planning` uses for each ticket it creates and for the fea
 - **Self-contained.** It makes sense without reading the feature document; it links to that document for wider context, and to the architecture document for the shared design it builds against.
 - **Blocked-by only when real.** Add a dependency only when one ticket can't be built without the other already existing — not just because it's later in the working order.
 
+## Stack label
+
+Every ticket carries the `stack:<id>` label of the stack it's built in (see `references/stack-selection.md`). It's the only label `feature-planning` sets.
+
 ## Ticket description
 
 Use this structure for the Linear issue description (markdown). Omit a section only if it would genuinely be empty.
@@ -60,6 +64,7 @@ The Linear document created in the project, linked from every ticket.
 # <Feature name>
 
 Epic branch: epic/<feature_snake_name>
+Stacks: <stack ID> — <GitHub owner/repo>
 Architecture: [<Feature name> — Architecture](<architecture document URL>)
 
 ## Summary

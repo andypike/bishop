@@ -14,9 +14,10 @@ References this workflow depends on:
 - [`references/ticket-template.md`](../../references/ticket-template.md) — the structure every ticket description and the feature document follow, and what makes a ticket a good single slice. Read this before Phase 4.
 - [`references/git.md`](../../references/git.md) — the epic branch: naming, and how to create it. Read this before proposing the epic branch name in Phase 3.
 - [`references/architecture.md`](../../references/architecture.md) — what the architecture document settles, how it's built from the style guide, its diagrams and template. Read this before Phase 6.
-- [`stacks/rails/style-guide.md`](../../stacks/rails/style-guide.md) — the design rules the architecture follows. Read this before Phase 6.
+- [`references/stack-selection.md`](../../references/stack-selection.md) — how the feature's stack is chosen and recorded. Read this in Phase 2.
+- The stack's style guide, `stacks/<stack>/style-guide.md` — the design rules the architecture follows. Read this before Phase 6.
 
-**Adding architecture to an existing project.** Preflight blocks auto mode on a project without an architecture document. To add one to a project planned before this phase existed, run Phase 1 (the existing feature document and tickets are the brief), Phase 2, then Phases 6–8 against the existing tickets: Phase 8 creates only the architecture document, links it from the feature document, and adds its link to each ticket that isn't Done yet — plus any `blockedBy` links or ticket changes Phase 6 agreed.
+**Adding architecture to an existing project.** Preflight blocks auto mode on a project without an architecture document. To add one to a project planned before this phase existed, run Phase 1 (the existing feature document and tickets are the brief), Phase 2, then Phases 6–8 against the existing tickets: Phase 8 creates only the architecture document, links it from the feature document (adding a `Stacks:` line if it has none), and adds its link and `stack:<id>` label to each ticket that isn't Done yet — plus any `blockedBy` links or ticket changes Phase 6 agreed.
 
 ## Phase 1 — Intake
 
@@ -34,7 +35,9 @@ When material conflicts (e.g. meeting notes revise something in the original bri
 
 ## Phase 2 — Investigation
 
-Read-only exploration of the target codebase, aimed at the feature as a whole rather than any one ticket:
+Read-only exploration of the target codebase, aimed at the feature as a whole rather than any one ticket.
+
+Start by **choosing the stack**: an existing feature document's `Stacks:` line, or else detection, per `references/stack-selection.md`. Announce it in one line and carry on. Then explore:
 
 - What already exists that the feature builds on (models, associations, controllers, views, jobs, integrations) and what is genuinely new.
 - Existing patterns the tickets should follow — don't plan new abstractions where a suitable one already exists.
@@ -112,10 +115,11 @@ Before anything goes to Linear, review the tickets and the architecture as a who
 In this order:
 
 1. **Epic branch**: if it doesn't exist on `origin` yet, create it from the up-to-date root branch, per `references/git.md`. Doing this first means a push failure (permissions, wrong remote) surfaces before anything is written to Linear.
-2. **Feature document**: create a Linear document in the project (structure in `ticket-template.md`) holding the epic branch, feature summary, sources supplied, the feature decision log, the ticket list, and what's out of scope. When extending an existing feature, update its document instead.
+2. **Feature document**: create a Linear document in the project (structure in `ticket-template.md`) holding the epic branch, the `Stacks:` line, feature summary, sources supplied, the feature decision log, the ticket list, and what's out of scope. When extending an existing feature, update its document instead.
 3. **Architecture document**: create it in the project (template in `references/architecture.md`), linking to the feature document, then add its link to the feature document. When extending an existing feature, update its architecture document instead, keeping what earlier tickets built.
-4. **Tickets**, in dependency order — blockers first, so each ticket's `blockedBy` can reference the identifiers already created. Set the team, project, title, description (including links to the feature and architecture documents), and `blockedBy`. Every ticket goes in the confirmed project. Don't set estimates, labels, priority, milestones, assignees, or state — leave those to the team's defaults. In particular, leave `agent:claimable` off: the developer releases tickets to agents.
-5. **Fill in the real identifiers**: the feature document's ticket list, and every "Introduced by" in the architecture document, once all tickets exist.
+4. **Stack labels**: make sure the team's `stack` label group has the feature's `stack:<id>` label, creating the group or label if it's missing (see `references/stack-selection.md`).
+5. **Tickets**, in dependency order — blockers first, so each ticket's `blockedBy` can reference the identifiers already created. Set the team, project, title, description (including links to the feature and architecture documents), and `blockedBy`. Every ticket goes in the confirmed project. Set the ticket's `stack:<id>` label. Don't set estimates, any other labels, priority, milestones, assignees, or state — leave those to the team's defaults. In particular, leave `agent:claimable` off: the developer releases tickets to agents.
+6. **Fill in the real identifiers**: the feature document's ticket list, and every "Introduced by" in the architecture document, once all tickets exist.
 
 If a creation call fails partway through, stop and report what was created and what wasn't — don't retry blindly and risk duplicates. Check the project's issues before resuming.
 
