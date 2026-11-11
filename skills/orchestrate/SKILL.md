@@ -15,14 +15,17 @@ References:
 - [`references/preflight.md`](../../references/preflight.md) — the checks run before any work starts, and the project state they produce.
 - [`references/stack-selection.md`](../../references/stack-selection.md) — how each ticket's stack is chosen at claim.
 - `stacks/<stack>/environment.md` — for each stack the project uses: how workers are kept apart, the setup at claim and clean-up, and the stack's part of the worker prompt.
-- [`references/git.md`](../../references/git.md) — the epic branch, ticket branch names, and creating worktrees.
+- [`references/git.md`](../../references/git.md) — the project's repos and how every command names its repo, the epic branch, ticket branch names, and creating worktrees.
+
+**Every git and `gh` command here names its repo**: `git -C <checkout> …` and `gh … --repo <owner/repo>`, using the ticket's repo — the one its stack lives in, as recorded in `project.md` (see "Repos" in `references/git.md`). That holds even for a single-repo project.
 - [`references/epic-review.md`](../../references/epic-review.md) — the optional review of the whole epic once the project finishes, and fixing what it finds.
 
 ## Starting the orchestrator
 
-From the project's main checkout, start a session with the orchestrator's settings, then loop the skill:
+From the **client folder** that holds the project's repos side by side, start a session with the orchestrator's settings, then loop the skill. For a project with a single repo, its own checkout works too.
 
 ```bash
+cd ~/code/<client>
 claude --settings <plugin root>/settings/orchestrator.json
 ```
 
@@ -30,7 +33,7 @@ claude --settings <plugin root>/settings/orchestrator.json
 /loop 5m /bishop:orchestrate "<Linear project name>"
 ```
 
-An optional `max_workers: <n>` after the project name sets how many workers may run at once (default 2). The orchestrator never runs more than preflight allows for the project.
+An optional `max_workers: <n>` after the project name sets how many workers may run at once (default 2), across all the project's repos: they share one Claude account's usage limits. The orchestrator never runs more than preflight allows for the project.
 
 Keep the session open while auto mode should run. Stopping the loop stops new work; workers already running finish their current run. The orchestrator stops its own loop once the project is finished (step 7).
 
@@ -46,7 +49,7 @@ Everything the orchestrator knows between ticks is in Linear or on disk, never i
   status.json                       tickets, labels and links for the menu bar app, rewritten every tick
   worktrees/<TICKET-ID>/            one git worktree per ticket, in the repo of the ticket's stack
   <TICKET-ID>/
-    worker.md                       stack, branch, worktree, session ID, crash count, run count
+    worker.md                       stack, repo, branch, worktree, session ID, crash count, run count
     prompt.md                       the worker's first prompt
     run-<n>.json, run-<n>.stderr    output of each worker run
     pid                             PID of the running worker, while one runs
@@ -105,9 +108,9 @@ For every ticket folder with a `pid` file, check the process with `kill -0 <pid>
 For each ticket that has a `worker.md` not yet marked cleaned up, and whose Linear status is now QA, Done, or Canceled:
 
 1. If a worker is still running (only possible for Canceled), stop it: `kill <pid>`.
-2. **Record deployment tasks** — skip for Canceled, or if `worker.md` already marks them recorded (a re-claim after Rejected writes a fresh `worker.md`, so rework gets recorded too). Read `<ticket state dir>/deployment-tasks.md`, then merge its commands into the **Deployment tasks** section of the feature document, per "Deployment tasks" in `references/ticket-template.md`: fetch the document fresh, add only lines that aren't already there, and save it. Then mark them recorded in `worker.md`. If the file is missing, read the list from the PR body's Deployment tasks section instead (`gh pr view <branch> --json body`), and say so in the report.
-3. Remove the worktree: `git worktree remove <worktree>`. Without `--force`: if git refuses because of uncommitted changes, leave the worktree, report it, and carry on with the rest.
-4. Delete the local ticket branch: `git branch -D <ticket branch>`.
+2. **Record deployment tasks** — skip for Canceled, or if `worker.md` already marks them recorded (a re-claim after Rejected writes a fresh `worker.md`, so rework gets recorded too). Read `<ticket state dir>/deployment-tasks.md`, then merge its commands into the **Deployment tasks** section of the feature document (under the ticket's repo, when the project has several), per "Deployment tasks" in `references/ticket-template.md`: fetch the document fresh, add only lines that aren't already there, and save it. Then mark them recorded in `worker.md`. If the file is missing, read the list from the PR body's Deployment tasks section instead (`gh pr view <branch> --repo <owner/repo> --json body`), and say so in the report.
+3. Remove the worktree: `git -C <checkout> worktree remove <worktree>`. Without `--force`: if git refuses because of uncommitted changes, leave the worktree, report it, and carry on with the rest.
+4. Delete the local ticket branch: `git -C <checkout> branch -D <ticket branch>`.
 5. Undo the stack's per-worker setup, per "Cleaning up" in the stack's `environment.md` (for Rails: drop the worker's databases).
 6. Remove the ticket's `agent:*` label (`removeLabels` only — there's nothing to swap to).
 7. Mark `worker.md` cleaned up and append `Cleaned up · <status>` to `progress.md`. Keep the ticket folder: its run logs are the record of what happened.
@@ -121,7 +124,7 @@ Skip this step while the project is paused. A ticket needs resuming when its lab
 **Finding conflicted PRs** — for each ticket labelled `agent:pr-open` and still In Review, check whether its PR can merge, running this alone:
 
 ```bash
-gh pr view <ticket branch> --json mergeable -q .mergeable
+gh pr view <ticket branch> --repo <owner/repo> --json mergeable -q .mergeable
 ```
 
 `CONFLICTING` means another ticket merged first and the PR can no longer merge into the epic: it needs resuming. `MERGEABLE` needs nothing. `UNKNOWN` means GitHub hasn't worked it out yet; check again next tick. Swap the label to `agent:working` only when you start its worker (below), and mark `worker.md` as resolving conflicts.
@@ -147,7 +150,7 @@ Skip this step while the project is paused or no slot is free.
    1. **Choose its stack**, per "In auto mode" in `references/stack-selection.md`. A ticket that needs a `stack:*` label and has none isn't claimable: skip it and say so in the report.
    2. **Claim it** — one `save_issue` call that sets the status to In Progress and swaps `agent:claimable` for `agent:planning`. If the swap fails, someone changed the ticket in the meantime: skip it this tick.
    3. **Name the branch** per `references/git.md`, summarising the ticket's title. For a Rejected ticket, use the `_feedback_` form, summarising what the developer's rejection comments ask for.
-   4. **Create the worktree** from the epic branch, per the auto mode section of `references/git.md`, then do the stack's setup, per "At claim" in the stack's `environment.md` (for Rails: copy in the gitignored files and create per-worker databases).
+   4. **Create the worktree** from the epic branch, in the ticket's repo, per the auto mode section of `references/git.md`, then do the stack's setup, per "At claim" in the stack's `environment.md` (for Rails: copy in the gitignored files and create per-worker databases).
    5. **Write `worker.md` and `prompt.md`**, from the template below, and append `Claimed · <ticket branch>` to `progress.md`.
    6. **Start the worker.**
 
@@ -159,6 +162,7 @@ Use the bishop:ticket-workflow skill in auto mode to work Linear ticket <TICKET-
 - mode: auto
 - ticket: <TICKET-ID>, in the Linear project "<project>". The orchestrator has claimed it: status In Progress, label agent:planning.
 - stack: <stack ID> — use the files in <plugin root>/stacks/<stack ID>/.
+- repo: <owner/repo> — the only repo you work in.
 - worktree: <worktree> (your current directory), on branch <ticket branch>, cut from <epic branch>.
 - epic branch: <epic branch>
 - state directory: <ticket state dir>
@@ -204,7 +208,7 @@ Then write the status file, below. Write it every tick, even one stopped by a �
 - **`loop`** — `running`; `paused` during a usage-limit pause, with `paused_until` as an ISO 8601 time; `finished` on the tick that stops the loop (step 7).
 - **`tickets`** — every ticket in the project that carries an `agent:*` label or has a `worker.md` not yet marked cleaned up. Read statuses and labels from this tick's project-wide issue listing; if step 5 was skipped, list the issues once now.
 - **`label`** — the ticket's `agent:*` label, or `null` once cleaned up.
-- **`pr_url`** — for a ticket labelled `agent:pr-open`: the PR URL from the issue's GitHub attachment, or `gh pr view <ticket branch> --json url -q .url`. Record it in `worker.md` once found, rather than looking it up every tick.
+- **`pr_url`** — for a ticket labelled `agent:pr-open`: the PR URL from the issue's GitHub attachment, or `gh pr view <ticket branch> --repo <owner/repo> --json url -q .url`. Record it in `worker.md` once found, rather than looking it up every tick.
 
 Write it with the Write tool, valid JSON, nothing else in the file.
 

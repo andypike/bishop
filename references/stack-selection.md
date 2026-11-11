@@ -25,7 +25,7 @@ Take the first of these that gives an answer:
 
 Then **announce** it in one line and carry on — don't ask for confirmation: `Stack: Ruby on Rails (from the ticket's label)`, or `(detected: Gemfile with rails, config/application.rb)`. The developer corrects it if it's wrong.
 
-**Check the repo matches.** When the stack came from the label or the feature document, run detection too. If this repo is detected as a different stack and not as the chosen one, the ticket belongs somewhere else: stop and say which stack it's for, and the repo the `Stacks:` line names for it. Never work a ticket in the wrong stack's repo.
+**Check the repo matches.** When the `Stacks:` line names a repo for the ticket's stack, this checkout's `origin` must be that repo. When there's no `Stacks:` line but the stack came from the label, run detection: this repo must be detected as that stack. If either check fails, the ticket belongs somewhere else: stop and say which stack and repo it's for — usually a sibling folder of this one — so the developer can open the session there. Never work a ticket in the wrong repo.
 
 ## In auto mode
 

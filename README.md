@@ -113,9 +113,10 @@ Run `feature-planning` from inside the project's repo. It creates the Linear pro
 
 ### Running auto mode
 
-From the project's main checkout:
+From the client folder that holds the project's repos side by side (a project can span repos, such as a Rails backend and a React Native app), or from the repo's own checkout for a single-repo project:
 
 ```bash
+cd ~/code/<client>
 claude --settings /path/to/bishop/settings/orchestrator.json
 ```
 

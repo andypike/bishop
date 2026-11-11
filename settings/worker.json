@@ -108,7 +108,10 @@
       "Bash(pnpm remove *)",
       "Bash(bun add *)",
       "Bash(bun install*)",
-      "Bash(bun remove *)"
+      "Bash(bun remove *)",
+      "Bash(git -C *)",
+      "Bash(git --git-dir*)",
+      "Bash(git --work-tree*)"
     ]
   },
   "sandbox": {

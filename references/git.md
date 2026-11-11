@@ -2,11 +2,26 @@
 
 This workflow handles the epic branch, ticket branches, per-slice commits, pushing the ticket branch, and opening the PR. Merging is always the developer's.
 
+## Repos
+
+A Linear project can span several repos, one per stack — a Rails backend and a React Native app, say. The feature document's `Stacks:` line names each stack's GitHub repo (see `references/stack-selection.md`), and a ticket's `stack:*` label decides which repo it's worked in. Every repo has its own epic branch, with the same name.
+
+- **Interactive mode** and **workers** run inside one repo — the session's checkout, or the worker's worktree — so their git commands are plain, as written below.
+- **The orchestrator** (and preflight, the epic review and `feature-planning`) work across repos, so every command names its repo, even when the project has only one: `git -C <checkout> <command>` for git, and `--repo <owner/repo>` for `gh` (`gh pr view <branch> --repo acme/shop-app`). Never `cd` into a repo to run something: commands must start with `git` or `gh` to match their permission rules.
+
+### Finding the checkouts
+
+The orchestrator is started from the **client folder** that holds the project's repos side by side (`~/code/acme/shop-api`, `~/code/acme/shop-app`), or, for a single-repo project, from the repo's own checkout. To find each repo named in `Stacks:`:
+
+1. **Candidates** — the current directory if it's a git repo; otherwise each folder directly inside it that is one.
+2. **Match** — `git -C <candidate> remote get-url origin`, normalised to `owner/repo` (both `git@github.com:acme/shop-app.git` and `https://github.com/acme/shop-app` are `acme/shop-app`), against each repo in `Stacks:`.
+3. **Record** each repo's checkout path in `project.md`. A repo with no match isn't cloned here; a repo matched twice (two clones) needs the developer to say which one.
+
 ## Epic branch
 
 Every feature's work lands on its own **epic branch**, `epic/<feature_snake_name>` (e.g. `epic/csv_export`), created from the up-to-date root branch (`main`, falling back to `master`). `feature-planning` picks the name and records it in the feature document as `Epic branch: epic/<name>`; the feature document is the source of truth for which epic a ticket belongs to. Linear's GitHub automation moves a ticket to QA when its PR merges into `epic/*`, so the `epic/` prefix is load-bearing.
 
-To create a missing epic branch:
+To create a missing epic branch (from the orchestrator or `feature-planning`, with `-C <checkout>` for each repo that needs it):
 
 ```bash
 git fetch origin <root-branch>
@@ -52,16 +67,16 @@ Nothing gets written — not even a test file — until this is settled:
      `--ff-only` fails loudly rather than silently creating a merge commit or diverging — if it fails, stop and ask.
    - Create and switch to the ticket branch: `git checkout -b <TICKET-ID>_<summary>` (or `<TICKET-ID>_feedback_<summary>` for a rejected ticket).
 
-**Auto mode:** the orchestrator settles the branch before the worker starts, by creating a worktree on it:
+**Auto mode:** the orchestrator settles the branch before the worker starts, by creating a worktree on it, in the repo of the ticket's stack:
 
 ```bash
-git fetch origin <epic-branch>
-git worktree add --no-track -b <ticket-branch> <worktree-path> origin/<epic-branch>
+git -C <checkout> fetch origin <epic-branch>
+git -C <checkout> worktree add --no-track -b <ticket-branch> <worktree-path> origin/<epic-branch>
 ```
 
 `--no-track` matters: without it the ticket branch tracks the epic, so a bare `git push` would target the epic.
 
-If the ticket branch already exists locally (a ticket re-claimed after an error), attach it instead: `git worktree add <worktree-path> <ticket-branch>`. The worker only verifies the branch, per Phase 5.
+If the ticket branch already exists locally (a ticket re-claimed after an error), attach it instead: `git -C <checkout> worktree add <worktree-path> <ticket-branch>`. The worker only verifies the branch, per Phase 5.
 
 ## End of each TDD slice
 

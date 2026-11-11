@@ -60,7 +60,20 @@
       "Bash(bun install --frozen-lockfile --cwd *)",
       "Bash(node -v)",
       "Bash(sysctl -n hw.ncpu)",
-      "Bash(npm install --prefix ~/.bishop/tools/stryker *)"
+      "Bash(npm install --prefix ~/.bishop/tools/stryker *)",
+      "Bash(git -C * fetch *)",
+      "Bash(git -C * worktree *)",
+      "Bash(git -C * branch *)",
+      "Bash(git -C * ls-files *)",
+      "Bash(git -C * remote *)",
+      "Bash(git -C * show-ref *)",
+      "Bash(git -C * push origin origin/*)",
+      "Bash(git -C * push origin *_review_fixes:epic/*)",
+      "Bash(git -C * diff *)",
+      "Bash(git -C * log *)",
+      "Bash(git -C * show *)",
+      "Bash(git -C * merge-base *)",
+      "Bash(git -C * rev-parse *)"
     ],
     "deny": [
       "Bash(git push --force *)",
@@ -90,7 +103,16 @@
       "Bash(npx expo run*)",
       "Bash(npx expo start*)",
       "Bash(just publish*)",
-      "Bash(just build*)"
+      "Bash(just build*)",
+      "Bash(git -C * push --force *)",
+      "Bash(git -C * push -f *)",
+      "Bash(git -C * push * --delete *)",
+      "Bash(git -C * branch -D epic/*)",
+      "Bash(git -C * branch -D main)",
+      "Bash(git -C * branch -D master)",
+      "Bash(git -C * worktree remove --force *)",
+      "Bash(git -C * checkout *)",
+      "Bash(git -C * reset *)"
     ]
   },
   "sandbox": {
