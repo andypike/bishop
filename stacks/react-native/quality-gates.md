@@ -123,9 +123,9 @@ Stryker copies the project into `.stryker-tmp/` while it runs. It removes the co
 
 - **Ranges enclose whole functions**: widen each diff hunk to the function, hook or component it's in, as with Evilution for Rails.
 - **Leave out `styles.ts` files and copy files**: mutating style values and strings produces survivors no test should catch. Mutate logic: hooks, helpers, mappers, stores, services, and components' behaviour.
-- **Read the JSON report**: each file's mutants and their `status` — `Killed`, `Survived`, `NoCoverage`, `Timeout`, `RuntimeError`, `CompileError`. `Survived` and `NoCoverage` are gaps to judge, as for Evilution: kill each meaningful one with a test, or record why it's equivalent.
+- **Read the JSON report**: each file's mutants and their `status` — `Killed`, `Survived`, `NoCoverage`, `Timeout`, `RuntimeError`, `CompileError`. `Survived` and `NoCoverage` are gaps to judge, as for Evilution: kill each meaningful one with a test, or record why it's equivalent. A mutant that only changes the text of a log message (`console.error`, a crash reporter's message) is equivalent: tests shouldn't pin log wording.
 - **Run it strictly alone**: no other check alongside it.
 - **Re-running after killing survivors**: run the same command again; `incremental` skips mutants whose code and tests haven't changed.
-- **Record** the score, survivor count, duration and concurrency for every run. These are being tuned. For scale, on a real app (2026-11-11) a 50-line function produced 83 mutants and took 109s at `concurrency 4`, running about 150 related tests per mutant; the same command again, with nothing changed, reused every result and took 11s.
+- **Record** the score, survivor count, duration and concurrency for every run. These are being tuned. For scale, on two real apps (2026-11-11) at `concurrency 4`: a 50-line function produced 83 mutants and took 109s, running about 150 related tests per mutant; a 90-line helper file produced 43 mutants and took 50s. Re-running the same command with nothing changed reused every result and took 11s.
 
 If Stryker can't run (it fails to start, every mutant errors, or `total` is 0), that's a tool problem, not a quality failure — record what happened and what you tried, report mutation testing as not run, and carry on. Note any config change that made it work, so it can be written up here.
