@@ -4,7 +4,7 @@ The structure `feature-planning` uses for each ticket it creates and for the fea
 
 ## What makes a good ticket
 
-- **A vertical slice.** Each ticket delivers a thin end-to-end piece of behaviour — whatever layers that behaviour needs in its stack (for Rails: schema, model, controller, view), and their tests — rather than one technical layer. Someone should be able to demo or QA it on its own.
+- **A vertical slice, within one stack.** Each ticket delivers a thin end-to-end piece of behaviour — whatever layers that behaviour needs in its stack (for Rails: schema, model, controller, view), and their tests — rather than one technical layer. Someone should be able to demo or QA it on its own. When a feature spans stacks, a piece of behaviour that needs both becomes a backend ticket and an app ticket, joined by the architecture document's API contract (see `references/architecture.md`): each is a vertical slice of its own stack, and a backend ticket is QA'd through its API.
 - **A single task.** One branch, one reviewable PR, one `ticket-workflow` run. If the acceptance criteria describe two independent things a user could do, it's probably two tickets.
 - **Thin first.** The first slice is the narrowest working path through the feature (happy path, one role, minimal fields). Later slices add variations, edge cases, and polish on top.
 - **No layer-only tickets by default.** Don't split out "add the migration" or "build the model" on their own — fold the groundwork a slice needs into that slice. The exception is genuinely standalone groundwork that is large or risky on its own (e.g. a backfill on a big table, a new external integration) — call it out as such and agree it with the user.

@@ -222,7 +222,7 @@ The project is **finished** when all of these hold after this tick:
 
 Then end auto mode for the project: set `loop` to `finished` in `status.json`, cancel the loop that runs this skill, and end the report with `Project finished — loop stopped.` For a fixed-interval loop, find its job with `CronList` (the one whose prompt is this skill for this project) and delete it with `CronDelete`; for a self-paced loop, stop it rather than scheduling another wakeup. Don't ask first — finishing is the expected end of the run.
 
-Once the loop is stopped, offer an **epic review**, per "Offering it" in `references/epic-review.md`: a code review of the whole epic, now that every ticket has merged into it, with the developer choosing which findings to fix as new commits on the epic. Skip the offer if the epic hasn't changed since its last review.
+Once the loop is stopped, offer an **epic review**, per "Offering it" in `references/epic-review.md`: a code review of the whole epic, now that every ticket has merged into it, with the developer choosing which findings to fix as new commits on the epic. Skip the offer if no repo's epic has changed since its last review.
 
 If a clean-up step failed (a worktree git refused to remove), the project isn't finished: the loop keeps running so the next tick retries, and the report keeps saying what's stuck.
 

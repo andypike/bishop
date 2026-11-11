@@ -109,7 +109,7 @@ Linear links a PR to its ticket from the ticket ID in the branch name (`ENG-123_
 
 ### Planning for auto mode
 
-Run `feature-planning` from inside the project's repo. It creates the Linear project, the feature document and its epic branch, the architecture document, and the tickets. Auto mode won't start on a project without an architecture document, because agents working in parallel build against it; for a project planned before that existed, ask `feature-planning` to add one. Tickets are created without the `agent:claimable` label: a developer releases each one to agents by moving it to Todo and adding `agent:claimable`.
+Run `feature-planning` from the client folder that holds the project's repos (or from inside the repo, for a single-repo feature). It creates the Linear project, the feature document and its epic branch, the architecture document, and the tickets. Auto mode won't start on a project without an architecture document, because agents working in parallel build against it; for a project planned before that existed, ask `feature-planning` to add one. Tickets are created without the `agent:claimable` label: a developer releases each one to agents by moving it to Todo and adding `agent:claimable`.
 
 ### Running auto mode
 
@@ -148,7 +148,7 @@ If a ticket's PR stops merging cleanly because another ticket merged first, the 
 
 The orchestrator stops its loop by itself once every ticket in the project is in QA, Done or Canceled and its worktrees and databases are cleaned up. If a ticket is rejected after that, start it again.
 
-When it stops, it offers to **review the whole epic**. Each ticket's PR was reviewed alone, so this looks for what only shows across tickets. It runs the `code-review` skill at `xhigh` effort over the epic's full diff, then shows you the findings with a recommendation for each. By default the recommended ones are fixed: an agent fixes them test first in a worktree, runs the quality gate, and the orchestrator pushes the commits straight onto the epic branch (fast-forward only). You can instead fix all of them, pick which to fix, or defer them, recording deferred findings as unreleased Linear tickets, in the feature document, or not at all. To review an epic at another time, run `/bishop:orchestrate "<Linear project name>" review`.
+When it stops, it offers to **review the whole epic**. Each ticket's PR was reviewed alone, so this looks for what only shows across tickets. It runs the `code-review` skill at `xhigh` effort over the epic's full diff in each repo, plus, for a project spanning repos, a check that the app's API calls match what the backend built and the architecture's API contract. Then it shows you the findings with a recommendation for each. By default the recommended ones are fixed: an agent fixes them test first in a worktree, runs the quality gate, and the orchestrator pushes the commits straight onto the epic branch (fast-forward only). You can instead fix all of them, pick which to fix, or defer them, recording deferred findings as unreleased Linear tickets, in the feature document, or not at all. To review an epic at another time, run `/bishop:orchestrate "<Linear project name>" review`.
 
 ## Iterating on the plugin
 
