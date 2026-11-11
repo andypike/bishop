@@ -12,14 +12,7 @@ The test for whether something belongs here: would two tickets need to agree on 
 
 ## Building it from the style guide
 
-The stack's style guide (`stacks/<stack>/style-guide.md`) is the starting point for every design choice. Walk its high-level sections against the feature, and record in **Style guide** how each one shapes the design:
-
-- **Controllers** — which resources and RESTful routes the feature adds; a custom verb action is a missing resource.
-- **Models & Domain Objects** — the domain nouns; which operations are commands in `app/commands`; which concepts deserve a PORO rather than growing an existing model.
-- **Database & Migrations** — tables, columns, constraints, defaults, and which queries need a query object.
-- **Security** — authentication, what each query is scoped to, and any public endpoints.
-- **Views & Presenters** — which screens need a presenter.
-- **User-facing Copy** — the i18n scopes the feature's classes use.
+The stack's style guide (`stacks/<stack>/style-guide.md`) is the starting point for every design choice. Walk its high-level sections against the feature, and record in **Style guide** how each one shapes the design. The "Architecture" section of the stack's `stack.md` lists those sections and what each one decides, along with the stack's shared files, the diagrams that usually apply, and example components.
 
 Where the codebase doesn't follow the style guide in an area the feature touches, decide once, here, whether the feature follows the guide or the local pattern (per "Working in codebases that don't already follow this" in the style guide), and record why. Otherwise every ticket re-decides it, and they may decide differently.
 
@@ -27,14 +20,14 @@ Where the codebase doesn't follow the style guide in an area the feature touches
 
 Every new component, table, and column is **introduced by** exactly one ticket. A ticket that uses something another ticket introduces must be blocked by that ticket. Check this against the tickets' `blockedBy` links: a missing link is a dependency the breakdown didn't see, and the fix is to add it or move the component into the earlier ticket.
 
-Files every ticket may edit — `config/routes.rb`, locale files, `db/schema.rb`, shared concerns — get a convention instead of an owner: what each ticket adds there and how it's named, so their changes merge without conflict.
+Files every ticket may edit — routes, locale files, the database schema, shared modules; the stack's `stack.md` lists them — get a convention instead of an owner: what each ticket adds there and how it's named, so their changes merge without conflict.
 
 ## Diagrams
 
 Diagrams are Mermaid code blocks (```` ```mermaid ````), which Linear documents render as diagrams and GitHub renders in PRs and markdown. Include only those that explain something the text doesn't:
 
 - **Data model** — an `erDiagram` of the new and changed tables, with the existing tables they connect to. Include whenever the feature changes the schema.
-- **Request flow** — a `flowchart` from route to controller to command, models, jobs, and external services. Include whenever the feature adds more than one component per request.
+- **Request flow** — a `flowchart` from where a request enters (a route, a screen) through each component it passes, to storage and external services. Include whenever the feature adds more than one component per request.
 - **Multi-step process** — a `sequenceDiagram` for flows across requests, jobs, or external systems (an import, a payment, an email round trip).
 - **Lifecycle** — a `stateDiagram-v2` for any status a record moves through, with what triggers each transition.
 
@@ -70,8 +63,7 @@ The shape of the solution in a few sentences: what's new, what it builds on, and
 
 | Component | Layer | Responsibility | Introduced by |
 | --- | --- | --- | --- |
-| `ExportsController` | controller | create and download exports | ENG-1234 |
-| `ExportOrders` | command (`app/commands`) | builds and stores one export | ENG-1234 |
+| `<name>` | <layer, per the style guide> | <what it's responsible for> | ENG-1234 |
 
 ## Flows
 
@@ -79,9 +71,7 @@ The shape of the solution in a few sentences: what's new, what it builds on, and
 
 ## Shared files
 
-- `config/routes.rb` — <what each ticket adds, and the naming>
-- `config/locales/en.yml` — <the i18n scopes in use>
-- Migrations — <one migration per ticket that changes the schema; the tables each ticket owns>
+- <shared file, from the stack's list> — <what each ticket adds there, and the naming>
 
 ## Decisions
 

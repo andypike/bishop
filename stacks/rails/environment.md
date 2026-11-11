@@ -113,6 +113,44 @@ Evilution needs two things the rest of the worker's commands don't (see "Paralle
 - **Mutation prefix** — if the worker prefix turns on a coverage tool (for example `-e COVERAGE=true` for SimpleCov), record a copy without it. Workers run Evilution, and its database setup, through the mutation prefix, and everything else through the worker prefix. Setting the variable to an empty value isn't the same as leaving it out: a test helper that checks `if ENV['COVERAGE']` treats `""` as on. If the worker prefix doesn't turn on coverage, the two are the same.
 - **Per-job databases** — if the project has a command that copies the test database once per Evilution job, record it, with `<jobs>` as a placeholder, and the job count: `nproc` inside the container divided by the maximum active workers, capped at 8 and no less than 2. Record the names the copies take, so clean-up can drop them. If the project has no such command, record `--jobs 1`, and say what the project would need.
 
+### Preflight checks
+
+Run as part of the orchestrator's preflight (`references/preflight.md`), after the tool check in `quality-gates.md`. Work through "Working out the prefix" above, then:
+
+- **Worker prefix** — build it, with a placeholder for the ticket, and run the database check above using `preflight` as the ticket. It must print `<test db name>_preflight` (and the development name, for `DATABASE_URL` projects). Check every other database the app connects to as well: each must resolve to a per-worker name. ❌ if the primary database can't be separated, explaining the `database.yml` change the project needs. ⚠️ if only a secondary database can't be: the project runs with one worker.
+- **Shared services** — per "Shared services that tests write to" above. ⚠️ if tests write to a shared service that can't be separated per worker: the project runs with **one** active worker until it can. Say what the project needs to add.
+- **Gitignored files** — list the files to copy into each new worktree, per item 7 of "Working out the prefix" above. Show the list so the developer can spot anything missing or anything that shouldn't be copied.
+
+**Smoke test command**, for preflight's headless smoke test: `<worker prefix> ruby -v`. If it fails, check whether the Docker socket is reachable from the worker's sandbox.
+
+### Project state
+
+What preflight records for this stack in `project.md`:
+
+- the worker prefix template (and the development prefix, for `DATABASE_URL` projects);
+- per-worker databases the orchestrator must create at claim and drop at clean-up, with the service each lives on;
+- the mutation prefix, the per-job database command and the job count (or `--jobs 1`), per "Mutation testing" above;
+- the files to copy into each worktree.
+
+### At claim
+
+Once the orchestrator has created a ticket's worktree (or the epic review's, with `review` as the ticket):
+
+1. Copy in the files listed in `project.md`.
+2. Create any per-worker databases `project.md` lists for the orchestrator to create.
+
+### Worker prompt
+
+The orchestrator puts this block in the worker's prompt, after the list of inputs, filled in from `project.md`:
+
+```markdown
+Docker: put this prefix in front of every Ruby/Rails command — tests, RuboCop, RubyCritic, Evilution, rails. Never use `docker compose exec`, or the Docker commands in the ticket's notes or the project's own docs: those run the developer's checkout, not this worktree.
+
+<test prefix>
+```
+
+For a `DATABASE_URL` project, add the development prefix after the test prefix, introduced as: `Development database — only for db:prepare and migrations, never for tests:`. Add the mutation testing settings (see "Mutation testing" above): if the mutation prefix differs from the test prefix, add it, introduced as `Mutation testing — run Evilution and its database setup through this prefix instead (coverage off):`; then either `Before each Evilution run in Phase 6, copy the test database once per job: <per-job database command>, then pass --jobs <n>.` or `Run Evilution with --jobs 1: this project's test database isn't copied per job.`
+
 ### Using it (worker)
 
 - Every Ruby/Rails command goes through the prefix, never `exec` into the developer's running service: that runs the developer's checkout, not yours.

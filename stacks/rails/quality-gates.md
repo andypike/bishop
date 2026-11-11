@@ -4,6 +4,32 @@ The Rails tools, commands, and how to read each one's output. How the gate is ju
 
 **Every command below is written bare (e.g. `bundle exec rspec`) for readability.** Every project runs inside Docker Compose — see [`environment.md`](./environment.md) for how to detect the service and wrap these as `docker compose exec <service> <command>` (or `run --rm` if nothing's running). Never run Ruby/Rails tooling on the host.
 
+## Checks
+
+| Check | Kind | Recorded | Clean when |
+|---|---|---|---|
+| Tests: RSpec or Minitest, with the project's coverage tool | must pass | examples, pass/fail, coverage % | the full suite is green |
+| RuboCop | baseline-compared | offence count | no more offences than the baseline |
+| RubyCritic | baseline-compared | overall score | the score hasn't dropped below the baseline |
+| Evilution | mutation, scoped to the diff | mutation score, survivors | every meaningful survivor is killed; equivalent mutants are recorded as such |
+
+## Metrics
+
+The lines the quality metrics take in the final Linear comment and the PR body, each baseline → after:
+
+```markdown
+- Tests: <examples, pass/fail, coverage>
+- RuboCop: <offences>
+- RubyCritic: <score>
+- Mutation score: <score>
+```
+
+## Preflight check
+
+Run as part of the orchestrator's preflight (`references/preflight.md`), before the checks in `environment.md`:
+
+- **Test and quality tools** — the `Gemfile` / `Gemfile.lock` include RSpec or Minitest, RuboCop, RubyCritic, and Evilution. ❌ for each one missing, giving the developer two ways forward: add the gem, or skip that tool for this project. A test framework can't be skipped.
+
 ## Tool detection (Investigation phase)
 
 Before running anything, check the target project for:

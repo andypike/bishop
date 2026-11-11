@@ -1,6 +1,8 @@
 # Bishop - Not bad for a human.
 
-A Claude Code plugin for working Linear tickets in Ruby on Rails codebases: read the ticket, investigate the code, clarify the approach before writing anything, implement in small reviewed TDD batches (on a per-ticket branch, with a commit after each reviewed slice), then run a quality gate (tests, RuboCop, RubyCritic, mutation testing, style guide, code review) and a correctness-vs-ticket check before calling it done.
+A Claude Code plugin for working Linear tickets: read the ticket, investigate the code, clarify the approach before writing anything, implement in small reviewed TDD batches (on a per-ticket branch, with a commit after each reviewed slice), then run a quality gate (tests, linters, mutation testing, style guide, code review) and a correctness-vs-ticket check before calling it done.
+
+The workflow is the same whatever the project is built with; each tech stack brings its own style guide, quality tools and environment from `stacks/`. Ruby on Rails is supported today. Each ticket is worked in one stack, chosen from its `stack:*` label in Linear or detected from the repo.
 
 Before that, it can also help plan a new feature: give it a detailed brief plus any supporting material (docs, files, prototypes, meeting notes), and it investigates the codebase, proposes vertical-slice tickets, fleshes them out with you one at a time, designs the feature's architecture with you (following the style guide, with diagrams), and creates it all in a Linear project — ready to work one by one or in parallel.
 
@@ -15,11 +17,12 @@ Once a feature is planned, it can write the client's Statement of Work: it asks 
 ## Prerequisites
 
 - A Linear MCP connector configured in the Claude Code session (used to read and create tickets, create feature documents, and post comments).
-- Target project uses RSpec or Minitest, and ideally already has RuboCop and RubyCritic configured (the workflow will ask before adding either).
-- [Evilution](https://github.com/marinazzio/evilution) for mutation testing — used instead of `mutant`, which requires a paid license for private code. Add `gem "evilution", group: :test` to the target project's Gemfile.
-- The project runs in Docker via `docker-compose`/`docker compose`. All Ruby/Rails commands (tests, RuboCop, RubyCritic, Evilution) run inside the container, never on the host — see `stacks/rails/environment.md`.
+- For each stack the project uses, what `stacks/<stack>/` asks for. For Rails:
+  - Target project uses RSpec or Minitest, and ideally already has RuboCop and RubyCritic configured (the workflow will ask before adding either).
+  - [Evilution](https://github.com/marinazzio/evilution) for mutation testing — used instead of `mutant`, which requires a paid license for private code. Add `gem "evilution", group: :test` to the target project's Gemfile.
+  - The project runs in Docker via `docker-compose`/`docker compose`. All Ruby/Rails commands (tests, RuboCop, RubyCritic, Evilution) run inside the container, never on the host — see `stacks/rails/environment.md`.
 
-The prerequisites above are for the Rails workflows. `react-native-upgrade` runs on the host and needs no Linear or Docker. It needs the Node version from the project's `.nvmrc`, and ideally Xcode and the Android SDK. Whatever can't be built locally is verified with EAS builds.
+The prerequisites above are for the ticket workflows. `react-native-upgrade` runs on the host and needs no Linear or Docker. It needs the Node version from the project's `.nvmrc`, and ideally Xcode and the Android SDK. Whatever can't be built locally is verified with EAS builds.
 
 ## What's in here
 
@@ -77,7 +80,7 @@ Everything auto mode needs, once per machine, Linear team and project. The orche
 
 ### Your machine
 
-- [ ] **Docker** is running (Docker Desktop, OrbStack, or similar).
+- [ ] **Docker** is running (Docker Desktop, OrbStack, or similar), for Rails projects.
 - [ ] **GitHub CLI** (`gh`) is installed and signed in with push access to the project's repo: `gh auth status`.
 - [ ] **Claude Code** is signed in. Every agent runs under your account, so with a Claude plan, auto mode uses your plan's usage limits, and running agents in parallel uses them up faster.
 - [ ] **The Linear connector** is connected in Claude Code: `claude mcp list` shows Linear as connected.
@@ -94,9 +97,9 @@ Linear links a PR to its ticket from the ticket ID in the branch name (`ENG-123_
 
 ### Your project's repo
 
-- [ ] **Test and quality tools** in the Gemfile: RSpec or Minitest, RuboCop, RubyCritic, and Evilution.
-- [ ] **Per-worker databases**: each environment has one database, and its name can be changed per worker, either through an environment variable read in `config/database.yml` or by `DATABASE_URL`. See `stacks/rails/environment.md`.
-- [ ] **Shared services written by tests** can be separated per worker. For example, search index names can take a per-worker suffix. Otherwise the project runs one agent at a time. See `stacks/rails/environment.md`.
+- [ ] **Test and quality tools** for the project's stack, per its `quality-gates.md`. For Rails, in the Gemfile: RSpec or Minitest, RuboCop, RubyCritic, and Evilution.
+- [ ] **Per-worker databases** (Rails): each environment has one database, and its name can be changed per worker, either through an environment variable read in `config/database.yml` or by `DATABASE_URL`. See `stacks/rails/environment.md`.
+- [ ] **Shared services written by tests** (Rails) can be separated per worker. For example, search index names can take a per-worker suffix. Otherwise the project runs one agent at a time. See `stacks/rails/environment.md`.
 - [ ] **Recommended**: in the repo's GitHub settings, "Automatically delete head branches", so merged ticket branches clean themselves up.
 
 ### Planning for auto mode

@@ -25,7 +25,7 @@ The approved plan is the contract. A trigger is a **surprise** — something the
 1. **Requirements gap** — the acceptance criteria turn out to be missing, ambiguous, or contradictory for the case at hand.
 2. **Design fork** — two or more viable designs with real trade-offs, and the plan didn't choose between them.
 3. **Uncharted decision** — a design decision that neither the style guide, the architecture document, the plan, nor an existing codebase pattern covers, and that a reviewer would likely question if made silently.
-4. **Sensitive change not in the plan** — a migration, data deletion, auth or permissions change, payments change, or public API change.
+4. **Sensitive change not in the plan** — data deletion, an auth or permissions change, a payments change, a public API change, or anything listed under "Sensitive changes" in the stack's `stack.md` (a migration, for Rails).
 5. **Scope drift** — the work needs changes to files or areas well outside those the plan named.
 6. **Architecture deviation** — the work can't follow the feature's architecture document: a component, table, name, or layer has to differ, or something another ticket introduces is missing or doesn't fit. Never build around the document or edit it (see `references/architecture.md`).
 7. **Plan change** — anything else that would change what the approved plan says will be built.

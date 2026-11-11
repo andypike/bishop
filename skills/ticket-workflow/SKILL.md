@@ -1,6 +1,6 @@
 ---
 name: ticket-workflow
-description: End-to-end Rails ticket workflow — read a Linear ticket, investigate the codebase, clarify the approach with the user before writing code, implement in small reviewed TDD batches, then run a quality gate (tests, RuboCop, RubyCritic, mutation testing, style guide, code review) and a correctness-vs-ticket check before calling it done. Use when the user gives a Linear ticket reference (e.g. "let's work on ENG-1234", "pick up ENG-1234") or asks to start/implement a ticket.
+description: End-to-end ticket workflow for any supported tech stack (Ruby on Rails today) — read a Linear ticket, investigate the codebase, clarify the approach with the user before writing code, implement in small reviewed TDD batches, then run the stack's quality gate (tests, linters, mutation testing, style guide, code review) and a correctness-vs-ticket check before calling it done. Use when the user gives a Linear ticket reference (e.g. "let's work on ENG-1234", "pick up ENG-1234") or asks to start/implement a ticket.
 ---
 
 # Ticket Workflow
@@ -36,7 +36,7 @@ Each line is the time, the phase, then what's happening, separated by ` · `. Ap
 - **Each phase as it starts**: `Phase 2 · Investigation · started`.
 - **Baseline**: when it starts and when it's done.
 - **Each slice** in Phase 5: started (its number out of the total, and its name), red, green, committed.
-- **Each quality gate check** in Phase 6, before it runs and with its result: `Phase 6 · Evilution · running`, then `Phase 6 · Evilution · 94% (3 survivors)`. Log a retry as `Phase 6 · retry 1/2`.
+- **Each quality gate check** in Phase 6, before it runs and with its result: `Phase 6 · <check> · running`, then its result, e.g. `Phase 6 · Evilution · 94% (3 survivors)`. Log a retry as `Phase 6 · retry 1/2`.
 - **The correctness check** in Phase 7: running, then its result.
 - **Every exit**: `Parked · agent:needs-input · <the question, in a few words>`, or `PR opened · <PR URL>`.
 
@@ -96,15 +96,15 @@ Read-only exploration of the target codebase:
 - Find the files, models, controllers, and existing tests relevant to the ticket.
 - Identify existing patterns worth reusing (don't propose new abstractions where a suitable one already exists).
 - Note which parts of the style guide are most relevant to this change.
-- **Tool detection**: check whether RSpec/Minitest, RuboCop, RubyCritic, and Evilution are configured (see the stack's `quality-gates.md`). If something's missing, flag it and ask before adding it as a dev dependency.
-- **Docker detection**: find the compose file, confirm `docker compose` vs `docker-compose`, and identify the app service (see the stack's `environment.md`). Every command from here on — baseline capture included — runs through this, not on the host.
+- **Tool detection**: check which of the stack's tools are configured, per "Tool detection" in the stack's `quality-gates.md`. If something's missing, flag it and ask before adding it as a dev dependency.
+- **Environment detection**: work out where and how commands run, per the stack's `environment.md` (for Rails: the compose file, the Compose CLI, and the app service). Every command from here on — baseline capture included — runs that way.
 
-**As soon as investigation is far enough along to know what to run, kick off baseline metric capture in the background** (full test suite + coverage, RuboCop, RubyCritic — commands in the stack's `quality-gates.md`). These can be slow; don't block the conversation on them. Mutation testing is *not* run here — there's no diff yet to mutate against.
+**As soon as investigation is far enough along to know what to run, kick off baseline metric capture in the background** (every check in the stack's table except mutation testing — commands in the stack's `quality-gates.md`). These can be slow; don't block the conversation on them. Mutation testing is *not* run here — there's no diff yet to mutate against.
 
 **Auto mode:**
 
 - The stack comes from your prompt; don't choose it again. Do check the repo matches it, per `references/stack-selection.md`, and park with `agent:needs-input` if it doesn't.
-- Run every command through the worker setup in the stack's `environment.md` — the worker's own app container and databases, never the shared service via `exec`.
+- Run every command the way your prompt and the stack's `environment.md` say for workers (for Rails: through the worker prefix, never `exec` into the shared service).
 - Preflight guarantees the quality tools are installed, except any your prompt says the developer skipped for this project: leave those out and report them as skipped in the baseline and the PR. If another tool is missing anyway, park with `agent:needs-input` rather than adding it.
 - The worker exits when it parks at the plan gate, so the baseline must outlive this run: let it finish before parking, and write its results to `<state dir>/baseline.md`. Run it in the foreground, per "Knowing a run has finished" in `references/quality-gates.md`.
 
@@ -149,7 +149,7 @@ This is the core loop, and it must stay small-batch — **never write the whole 
 
 If the user's review feedback implies a style guide gap (something they correct that isn't written down), suggest adding it to the stack's style guide — that's how review burden goes down over time.
 
-Only after this loop is quality-gate work appropriate — don't run RuboCop, RubyCritic, or mutation testing mid-loop; they're a Phase 6 concern.
+Only after this loop is quality-gate work appropriate — don't run the linters, other baseline-compared checks, or mutation testing mid-loop; they're a Phase 6 concern.
 
 **Auto mode:**
 
@@ -157,16 +157,15 @@ Only after this loop is quality-gate work appropriate — don't run RuboCop, Rub
 - **Epic**: before the first slice, bring the latest epic into the branch per "Bringing in the epic" in `references/git.md`, and log `Phase 5 · epic merged · <short SHA>`. With no commits of its own yet, this is a fast-forward. Skip it when resuming after a park mid-implementation. If the merge stops for any reason, `git merge --abort` and park with `agent:needs-input`.
 - **Slices** come from the approved plan, in order. Each slice runs steps 1, 2, 4 and 6 without the gates: write the failing test and watch it go red, implement until it's green, then commit (re-check the branch, stage only this slice's files).
 - **Escalation**: check every slice against the triggers in `references/escalation.md`, and post the slice's assumptions before moving on.
-- **Deployment tasks**: when a slice adds something that must run at deploy time — a migration, a rake or data task, a new environment variable — add it to `<state dir>/deployment-tasks.md` in that slice, following "Deployment tasks" in `references/ticket-template.md`. Keep the file even when it's empty: write `None` so the orchestrator can tell "nothing needed" from "not recorded".
+- **Deployment tasks**: when a slice adds something that must run at deploy time (see "Deployment tasks" in the stack's `stack.md`; for Rails, a migration, a rake or data task, a new environment variable) — add it to `<state dir>/deployment-tasks.md` in that slice, following "Deployment tasks" in `references/ticket-template.md`. Keep the file even when it's empty: write `None` so the orchestrator can tell "nothing needed" from "not recorded".
 
 ## Phase 6 — Quality gate
 
 Follow `references/quality-gates.md` and the stack's `quality-gates.md` exactly for commands and interpretation. In summary:
 
 - Full test suite (must be green).
-- RuboCop: auto-fix safe offenses (`-a`, never `-A`), report what's left. Offense count must not exceed baseline.
-- RubyCritic: score must not regress vs baseline.
-- Evilution: mutation testing scoped to just the changed files/lines. No baseline comparison (nothing to mutate before the change existed) — judge survivors on their own merits.
+- Each baseline-compared check in the stack's table (for Rails: RuboCop, after its safe auto-fix, and RubyCritic): must not be worse than the baseline.
+- Mutation testing (for Rails: Evilution), scoped to just the changed files/lines. No baseline comparison (nothing to mutate before the change existed) — judge survivors on their own merits.
 - Invoke the `code-review-runner` agent (via the Agent tool) against the diff for reuse/simplification/efficiency findings — runs the `code-review` skill on Opus at high effort, rather than calling the skill directly in the main session.
 - Style guide checklist: walk the diff against the stack's style guide.
 - Architecture check, when the ticket has an architecture document: the diff builds the components this ticket introduces with the document's names, layers and responsibilities, uses other tickets' components rather than re-creating them, and follows its shared-file conventions. A departure that wasn't approved is a finding.
@@ -176,8 +175,8 @@ Follow `references/quality-gates.md` and the stack's `quality-gates.md` exactly 
 **Auto mode:** the gate is a hard stop, with no developer to decide which findings matter:
 
 - **Code review findings**: verify each against the real source before acting. Fix the real ones; record inaccurate ones as rejected, with what you checked. A finding whose fix would change the approved plan is an escalation trigger, not a fix.
-- **Evilution survivors**: kill each meaningful survivor with a test; record equivalent mutants as such.
-- The gate is **clean** when the suite is green, RuboCop and RubyCritic haven't regressed against baseline, and every valid finding and meaningful survivor is resolved.
+- **Mutation survivors**: kill each meaningful survivor with a test; record equivalent mutants as such.
+- The gate is **clean** as `references/quality-gates.md` defines it: every check meets its "clean when" in the stack's table, and every valid finding and meaningful survivor is resolved.
 - If it isn't clean, fix in Phase 5 style (test first where behaviour changes, commit), then re-run the affected checks. That's one retry. After **two** retries, if the gate still isn't clean, park with `agent:gate-failed` (see `references/escalation.md`).
 - Keep every finding's outcome (fixed, added, rejected, already-approved) for Phase 8.
 
@@ -199,7 +198,7 @@ Invoke the `correctness-checker` agent (via the Agent tool) once the quality gat
 Post a final comment on the ticket — this is the permanent record of what shipped and what it took to get there, not just a "done" notice. Include:
 
 - **What was implemented.** Brief.
-- **Quality metrics before/after**: tests (example count, pass/fail, coverage), RuboCop, RubyCritic, mutation score. If Phase 6 ran more than once (a fix loop), report the final numbers, not the first pass.
+- **Quality metrics before/after**: the lines in the stack's **Metrics** section (for Rails: tests, RuboCop, RubyCritic, mutation score), with any skipped tool marked as skipped. If Phase 6 ran more than once (a fix loop), report the final numbers, not the first pass.
 - **Code review findings**, grouped by outcome, not just "see above" — the review is often where the real bugs surface, and that's easy to lose if it's not written down:
   - Fixed (what was wrong, in one line each).
   - Added — decisions made *during* review that expanded scope (e.g. a missing action the review exposed as necessary).
@@ -207,7 +206,7 @@ Post a final comment on the ticket — this is the permanent record of what ship
   - Already-approved — anything the review flagged that was in fact a decision made earlier in the ticket; note this so the record doesn't look like a contradiction.
 - **The correctness check's verdict** — including a second pass if the first one found gaps. A correctness check that finds nothing is worth stating explicitly ("no gaps found"), not omitting.
 - **Architecture changes** — any approved departure from the architecture document, and whether the document has been updated. Omit when there were none.
-- **Deployment tasks** — every command this ticket needs run at deploy time (migrations, rake tasks, anything beyond deploying the code), one per line, per "Deployment tasks" in `references/ticket-template.md`. "None" when there are none.
+- **Deployment tasks** — every command this ticket needs run at deploy time (anything beyond deploying the code, per the stack's `stack.md`), one per line, per "Deployment tasks" in `references/ticket-template.md`. "None" when there are none.
 
 Then **gate**: ask whether to push the branch and open the PR. If approved, follow the push and PR steps in `references/git.md`; otherwise both stay with the user.
 
@@ -215,7 +214,7 @@ If the ticket has deployment tasks and a feature document, offer to add them to 
 
 **Auto mode:**
 
-1. Check `<state dir>/deployment-tasks.md` against the diff: every migration and new rake task in it is listed, and the file says `None` if there are none. Never edit the feature document — the orchestrator adds the list there when the PR merges.
+1. Check `<state dir>/deployment-tasks.md` against the diff, per "Deployment tasks" in the stack's `stack.md` (for Rails: every migration and new rake task in it is listed), and the file says `None` if there are none. Never edit the feature document — the orchestrator adds the list there when the PR merges.
 2. Push the branch and open the PR against the epic branch, per `references/git.md`. The PR body carries the same record as the final comment, plus every assumption from the ticket.
 3. Post the final comment under a `**🤖 Agent — Complete**` heading, with the PR link at the top.
 4. Swap the label to `agent:pr-open` and exit. Linear moves the ticket to In Review when the PR opens; the orchestrator posts token usage after this run ends.

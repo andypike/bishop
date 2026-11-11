@@ -12,29 +12,41 @@ Each ticket is worked in exactly one stack, chosen per [`references/stack-select
 
 ## What a stack provides
 
-A folder named after the stack's ID — lowercase, hyphenated (`rails`, `react-native`) — holding these files:
+A folder named after the stack's ID — lowercase, hyphenated (`rails`, `react-native`) — holding four files. Each must have the sections listed, under these headings, because the workflows refer to them by name. [`rails/`](./rails/) is the worked example.
 
-| File | What it holds | Read by |
-|---|---|---|
-| `stack.md` | The stack's name and ID, and how to detect it in a repo. | stack selection |
-| `style-guide.md` | What good code looks like in this stack. Same role for every stack: applied while implementing, walked as a checklist in the quality gate, and the starting point for a feature's architecture. | ticket-workflow, feature-planning, epic review |
-| `quality-gates.md` | The stack's tools: how to detect them, the baseline and after-implementation commands, and how to read each one's output. How the gate is judged is generic, in [`references/quality-gates.md`](../references/quality-gates.md). | ticket-workflow, epic review |
-| `environment.md` | Where and how commands run (on the host, in a container), how auto mode keeps parallel workers apart, and what to clean up afterwards. | ticket-workflow, orchestrator, preflight |
+### `stack.md` — identity, and what the stack changes in planning and delivery
 
-### `stack.md`
+- **ID** — its Linear label `stack:<id>` and its name in a feature document's `Stacks:` line.
+- **Detection** — the files and contents that identify a repo as this stack, specific enough that a repo of another stack never matches. Used by `references/stack-selection.md`.
+- **Sensitive changes** — what needs a developer's say-so when the plan didn't include it (escalation trigger 4), on top of the ones every stack shares.
+- **Deployment tasks** — what counts as a deploy-time step, how each is written, what comes first, and how Phase 8 checks the list against the diff.
+- **Architecture** — the style guide sections the architecture document walks and what each decides, the stack's shared files, the diagrams that usually apply, and example components. Used by `references/architecture.md`.
 
-```markdown
-# <Stack name>
+### `style-guide.md` — what good code looks like
 
-- **ID**: `<id>` — also its Linear label, `stack:<id>`, and its name in a feature document's `Stacks:` line.
+Applied while implementing, walked as a checklist in the quality gate, and the starting point for a feature's architecture. Seed it from a respected source, then tune it as reviews surface preferences. End it with a **Quality gate philosophy** section pointing at `references/quality-gates.md`.
 
-## Detection
+### `quality-gates.md` — the stack's tools
 
-The files and contents that identify a repo as this stack, specific enough that a repo of another stack never matches.
-```
+How the gate is judged is generic, in [`references/quality-gates.md`](../references/quality-gates.md). This file holds:
+
+- **Checks** — a table of the tools: kind (must pass, baseline-compared, or mutation), what's recorded, and when each is clean.
+- **Metrics** — the lines the results take in the final comment and the PR body.
+- **Preflight check** — the auto mode check that every tool is installed.
+- **Tool detection**, **Baseline capture**, and **After implementation** — the exact commands and how to read each one's output.
+
+### `environment.md` — where and how commands run
+
+- **Detect the setup** — how Phase 2 works out where commands run (on the host, in a container) and how to wrap them.
+- For auto mode, under **Worker mode**: how parallel workers are kept apart, then:
+  - **Preflight checks** — what preflight verifies about the environment, and the **smoke test command** run by a headless agent;
+  - **Project state** — what preflight records in `project.md`;
+  - **At claim** — setup after a worker's worktree is created;
+  - **Worker prompt** — the block the orchestrator adds to a worker's prompt;
+  - **Cleaning up** — what's undone once the ticket reaches QA or Done.
 
 ## Adding a stack
 
-1. Create `stacks/<id>/` with the four files above. Write the style guide the way the Rails one was written: seed it from a respected source, then tune it as reviews surface preferences.
+1. Create `stacks/<id>/` with the four files above, every section filled in.
 2. Add it to the table above.
 3. Nothing else: stack selection finds the new folder, and preflight and `feature-planning` create its `stack:<id>` label in Linear the first time it's needed.

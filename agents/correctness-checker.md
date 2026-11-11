@@ -1,6 +1,6 @@
 ---
 name: correctness-checker
-description: Verifies a finished implementation actually satisfies a Linear ticket's requirements and the decisions agreed during planning — not just that tests pass. Invoke after the quality gate (tests, RuboCop, RubyCritic, mutation testing) is clean, before the ticket is considered done.
+description: Verifies a finished implementation actually satisfies a Linear ticket's requirements and the decisions agreed during planning — not just that tests pass. Invoke after the quality gate (tests, linters, mutation testing) is clean, before the ticket is considered done.
 tools: Read, Grep, Glob, Bash
 model: opus
 effort: high

@@ -128,10 +128,7 @@ Closes <TICKET-ID> — <Linear ticket URL>
 <what was implemented, briefly>
 
 ## Quality metrics (baseline → after)
-- Tests: <examples, pass/fail, coverage>
-- RuboCop: <offences>
-- RubyCritic: <score>
-- Mutation score: <score>
+<the lines in the stack's Metrics section (stacks/<stack>/quality-gates.md); a skipped tool says "skipped">
 
 ## Code review findings
 - **Fixed**: <one line each>

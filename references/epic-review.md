@@ -70,9 +70,9 @@ If nothing is to be fixed, go to [Finish](#6-finish).
 
 ## 4. Fix
 
-A headless fixer makes the fixes, the same way a worker works a ticket: in the review worktree, with its own databases, under `settings/worker.json`. The orchestrator never writes code.
+A headless fixer makes the fixes, the same way a worker works a ticket: in the review worktree, kept apart the same way (its own databases, for Rails), under `settings/worker.json`. The orchestrator never writes code.
 
-1. Create any per-worker databases `project.md` lists for the orchestrator to create, using `review` as the ticket ID.
+1. Do the stack's setup, per "At claim" in the stack's `environment.md`, using `review` as the ticket ID.
 2. Write `prompt.md`:
 
    ```markdown
@@ -83,14 +83,12 @@ A headless fixer makes the fixes, the same way a worker works a ticket: in the r
    - stack: <stack ID> — use the files in <plugin root>/stacks/<stack ID>/.
    - findings to fix: numbers <list>, in <review state dir>/findings.md. Ignore the others.
 
-   Docker: put this prefix in front of every Ruby/Rails command — tests, RuboCop, RubyCritic, Evilution, rails. Never use `docker compose exec`, or the Docker commands in the project's own docs: those run the developer's checkout, not this worktree.
-
-   <test prefix, filled in with `review` as the ticket>
+   <the stack's block, per "Worker prompt" in the stack's environment.md, filled in with `review` as the ticket>
 
    Run until every listed finding is fixed or skipped and summary.md is written, then exit.
    ```
 
-   Add the development prefix and any skipped quality tools as for a ticket's prompt (see "Worker prompt" in the orchestrate skill).
+   Add any skipped quality tools as for a ticket's prompt (see "Worker prompt" in the orchestrate skill).
 3. Start it: `<plugin root>/bin/start-worker <review worktree> <review state dir> <plugin root>`, and append `Review · fixing <n> findings` to `progress.md`.
 4. Wait for it: run `<plugin root>/bin/wait-for-worker <review state dir>` with `run_in_background`. You're notified when the fixer exits. Tell the developer it's running and that `bin/agent-status` shows its progress.
 
@@ -113,7 +111,7 @@ Report each finding's outcome — fixed with its commit, or skipped and why. Rec
 
 ## 6. Finish
 
-1. Unless the fix branch was left for the developer: remove the review worktree (`git worktree remove`, without `--force`), delete the fix branch (`git branch -D <fix branch>`), and drop the review's databases per "Cleaning up" in the stack's `environment.md`.
+1. Unless the fix branch was left for the developer: remove the review worktree (`git worktree remove`, without `--force`), delete the fix branch (`git branch -D <fix branch>`), and undo the stack's setup for the review per "Cleaning up" in the stack's `environment.md`.
 2. Add the review to the Reviews list in `project.md`, with the epic SHA after any push.
 3. Append `Cleaned up · review <n>` to `progress.md`.
 4. End with a short summary: findings fixed and pushed, findings deferred and where they were recorded, and anything left for the developer.
@@ -125,7 +123,7 @@ Report each finding's outcome — fixed with its commit, or skipped and why. Rec
 Log progress to `<state dir>/progress.md` the way the ticket-workflow skill's "Progress log" section describes, with `Fix <number>` in place of a slice.
 
 1. **Check the branch**: `git branch --show-current` must be the fix branch in the prompt. If it isn't, write that in `summary.md` and exit.
-2. **Baseline**: capture tests, RuboCop and RubyCritic per the stack's `quality-gates.md`, through the Docker prefix, and write them to `baseline.md`.
+2. **Baseline**: capture the stack's baseline per its `quality-gates.md`, through the prefix in your prompt, and write it to `baseline.md`.
 3. **Each finding**, in number order:
    1. Read it in `findings.md`, then check it against the real source. If it isn't real, skip it: say what you checked.
    2. If fixing it needs a decision the review didn't settle — a choice between behaviours, a change to the architecture document, a migration on data the client already has — skip it and say what needs deciding.

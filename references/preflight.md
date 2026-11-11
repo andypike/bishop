@@ -1,6 +1,6 @@
 # Preflight
 
-The orchestrator runs preflight before it starts any work on a project, and again whenever a saved result looks stale (a check fails mid-run, or the project's Docker setup changed). It runs from the project's main checkout, for one Linear project.
+The orchestrator runs preflight before it starts any work on a project, and again whenever a saved result looks stale (a check fails mid-run, or the project's environment changed, such as its Docker setup). It runs from the project's main checkout, for one Linear project.
 
 Every check ends in one of four outcomes:
 
@@ -31,36 +31,26 @@ Run every check, then report them all together, so the developer can fix everyth
 9. **Push access** — `gh auth status` succeeds, and `gh repo view --json viewerPermission` reports `WRITE`, `MAINTAIN`, or `ADMIN`. ❌ otherwise.
 10. **Branch clean-up** — `gh repo view --json deleteBranchOnMerge`. ⚠️ if off: merged ticket branches will pile up on GitHub; suggest turning on "Automatically delete head branches".
 
-## Tools
+## Stack checks
 
-Checks 11–14 run for each stack in the `Stacks:` line, against that stack's `quality-gates.md` and `environment.md`.
+For each stack in the `Stacks:` line, run the "Preflight check" section of the stack's `quality-gates.md`, then the "Preflight checks" section of its `environment.md`. Number them on from 11, in that order, and report them under the stack's name.
 
-11. **Test and quality tools** — the `Gemfile` / `Gemfile.lock` include RSpec or Minitest, RuboCop, RubyCritic, and Evilution. ❌ for each one missing, giving the developer two ways forward: add the gem, or **skip that tool for this project**. A test framework can't be skipped. Record skipped tools in the project state; the orchestrator tells every worker, and workers report them as skipped in the baseline and the PR rather than silently leaving them out. Auto mode can't ask for permission to add a dependency mid-ticket, which is why this is settled up front.
-
-## Docker
-
-Work through "Working out the prefix" in the stack's `environment.md`, then:
-
-12. **Worker prefix** — build it, with a placeholder for the ticket, and run the database check from the stack's `environment.md` using `preflight` as the ticket. It must print `<test db name>_preflight` (and the development name, for `DATABASE_URL` projects). Check every other database the app connects to as well, per the stack's `environment.md`: each must resolve to a per-worker name. ❌ if the primary database can't be separated, explaining the `database.yml` change the project needs. ⚠️ if only a secondary database can't be: the project runs with one worker.
-13. **Shared services** — per "Shared services that tests write to" in the stack's `environment.md`. ⚠️ if tests write to a shared service that can't be separated per worker: the project runs with **one** active worker until it can. Say what the project needs to add.
-14. **Gitignored files** — list the files to copy into each new worktree, per the stack's `environment.md`. Show the list so the developer can spot anything missing or anything that shouldn't be copied.
+- **Quality tools** — a missing tool is ❌, with two ways forward: add it, or **skip that tool for this project**. A test framework can't be skipped. Record skipped tools in the project state; the orchestrator tells every worker, and workers report them as skipped in the baseline and the PR rather than silently leaving them out. Auto mode can't ask for permission to add a dependency mid-ticket, which is why this is settled up front.
+- **One worker** — a stack check that says the project runs with one worker caps the project's maximum active workers at 1.
 
 ## Headless agent
 
-15. **Smoke test** — start one short headless run, the way the orchestrator starts a worker, with `settings/worker.json`: ask it to read the Linear project and to run `<worker prefix> ruby -v`. ❌ if it can't reach Linear (connector not connected, or tools not allowed) or Docker (socket not reachable from the sandbox). Show the error.
+**Smoke test** — start one short headless run, the way the orchestrator starts a worker, with `settings/worker.json`: ask it to read the Linear project and to run each stack's smoke test command (in the stack's `environment.md`). ❌ if it can't reach Linear (connector not connected, or tools not allowed) or a stack's command fails (for example, the Docker socket isn't reachable from the sandbox). Show the error.
 
 ## Project state
 
 On success, save the results to `~/.bishop/<repo>/<project-slug>/project.md`:
 
 - the epic branch
-- the project's stacks, from the `Stacks:` line; the results below are recorded per stack
-- the worker prefix template (and the development prefix, for `DATABASE_URL` projects)
-- per-worker databases the orchestrator must create at claim and drop at clean-up, with the service each lives on
-- the mutation prefix, the per-job database command and the job count (or `--jobs 1`), per "Mutation testing" in the stack's `environment.md`
-- quality tools skipped for this project
-- the files to copy into each worktree
-- the maximum active workers: the orchestrator's setting (default 2), or 1 if check 13 warned
+- the project's stacks, from the `Stacks:` line, and for each one:
+  - what "Project state" in the stack's `environment.md` lists;
+  - quality tools skipped for this project
+- the maximum active workers: the orchestrator's setting (default 2), or 1 if a stack check said so
 - that the GitHub automation was confirmed, and when
 
 Later runs reuse this file and repeat only the cheap checks (1–4, 6, 8, 9) unless a worker fails in a way that points at the saved setup.
