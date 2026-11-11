@@ -104,7 +104,7 @@ Run the audit and compare with baseline. Fix high/critical findings that have a 
 ## Phase 9 — Record
 
 1. Write `docs/upgrades/expo-<N>-<YYYY-MM>.md` from the template. Every breakage from Phase 5–7 gets its symptom, root cause and fix; every pin and deferral its reason.
-2. **Feed Bishop**: for each breakage that isn't specific to this project's code — a library, config key, SDK or toolchain behaviour any app could hit — propose an addition or correction to `references/react-native-upgrade/gotchas.md`, in that file's format. Show the developer the proposed entries; with approval, write them to Bishop on a branch of their choosing.
+2. **Feed Bishop**: for each breakage that isn't specific to this project's code — a library, config key, SDK or toolchain behaviour any app could hit — propose an addition or correction to `references/react-native-upgrade/gotchas.md`, in that file's format. Name the project only by its gotchas label from the record (`App A`), never the client's or app's name, and leave out anything that would identify it, such as what the app does. Show the developer the proposed entries; with approval, write them to Bishop on a branch of their choosing.
 3. Push the branch and open the PR, its body summarising the record and linking to it. Merging is the developer's.
 
 **Gate**: the developer reviews the record and the gotchas additions.
