@@ -59,7 +59,8 @@
       "Bash(pnpm --dir * install --frozen-lockfile)",
       "Bash(bun install --frozen-lockfile --cwd *)",
       "Bash(node -v)",
-      "Bash(sysctl -n hw.ncpu)"
+      "Bash(sysctl -n hw.ncpu)",
+      "Bash(npm install --prefix ~/.bishop/tools/stryker *)"
     ],
     "deny": [
       "Bash(git push --force *)",

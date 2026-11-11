@@ -5,9 +5,21 @@ Everything runs **on the host**, from the repo root, with the Node version and p
 ## Detect the setup (part of Phase 2 — Investigation)
 
 1. **Package manager** — from the lockfile: `yarn.lock` → Yarn, `package-lock.json` → npm, `pnpm-lock.yaml` → pnpm, `bun.lock` / `bun.lockb` → Bun. A `packageManager` field in `package.json` pins its version. Use it for every install and script; never mix managers, or the lockfile changes under you.
-2. **Node** — compare `node -v` with `.nvmrc` (or `engines.node` in `package.json`). If the major version differs, stop and ask the developer to switch (`nvm use`) and restart the session: a different Node can resolve different packages and change test results.
+2. **Node** — run `node -v` from the repo root and compare it with `.nvmrc` (or `engines.node` in `package.json`). The developer's machine is expected to pick the version per directory from `.nvmrc` (see [Node versions](#node-versions)). If the major version differs, stop and tell the developer: a different Node can resolve different packages and change test results.
 3. **Commands** — read `package.json` scripts and any `justfile` / `Makefile` for the project's test, lint, typecheck and format commands, and use those. Note what each covers: lint and format scripts often only cover `app/` and `App.tsx`, not test helpers outside it.
 4. **Dependencies installed** — `node_modules` exists and matches the lockfile. If it doesn't, ask before installing.
+
+## Node versions
+
+Each project pins its Node version in `.nvmrc`, and different projects pin different versions. The machine has to switch per directory, for every process — including the non-interactive shells Claude Code and auto mode's headless workers run commands in, where a shell prompt hook never fires. [mise](https://mise.jdx.dev) does this from the `.nvmrc` files projects already have, without adding anything to them:
+
+```bash
+mise settings add idiomatic_version_file_enable_tools node   # read .nvmrc
+mise use -g node@24                                          # default where there's no .nvmrc
+echo 'export PATH="$HOME/.local/share/mise/shims:$PATH"' >> ~/.zshenv   # shims for every shell
+```
+
+The shims pick the version from the directory each command runs in, so each worker gets its own worktree's version. Yarn and pnpm come from corepack: run `corepack enable` and `mise reshim` once per Node version. Don't run nvm alongside: whichever puts its Node first on `PATH` wins.
 
 ## Gotchas
 
@@ -27,7 +39,7 @@ Several workers run at once, each in its own git worktree. Nothing is shared at 
 ### Working it out (orchestrator, at preflight)
 
 1. **Package manager and install command** — per "Detect the setup". The orchestrator installs into a worktree without changing directory, so record the form that takes the path: `npm ci --prefix <worktree>`, `yarn install --frozen-lockfile --cwd <worktree>` (Yarn 1), `yarn --cwd <worktree> install --immutable` (Yarn 2+), `pnpm --dir <worktree> install --frozen-lockfile`, or `bun install --frozen-lockfile --cwd <worktree>`.
-2. **Node** — `node -v` in the orchestrator's session must match the project's `.nvmrc` major version: workers inherit it. Every stack in a project shares the orchestrator's Node, so two repos needing different Node majors can't run in one orchestrator session.
+2. **Node** — `node -v`, run from the main checkout's root, must match the project's `.nvmrc` major version. Workers run in worktrees of the same repo, with the same `.nvmrc`, so they get the same version (see [Node versions](#node-versions)).
 3. **Commands** — the test, lint, typecheck and format commands, per "Detect the setup", and the paths each covers.
 4. **Job count** — the number of CPU cores (`sysctl -n hw.ncpu` on macOS, `nproc` on Linux) divided by the maximum active workers, capped at 8, no less than 2. Used for both `--maxWorkers` and Stryker's `--concurrency`.
 5. **Gitignored files** — list them in the main checkout with `git ls-files --others --ignored --exclude-standard`, skipping `node_modules`, build output (`ios/`, `android/`, `.expo/`, `dist/`, `build/`), caches and editor folders. Leave out `.env` files too: tests mustn't depend on them (see Gotchas). Copy whatever configuration is left — often nothing.
@@ -36,7 +48,7 @@ Several workers run at once, each in its own git worktree. Nothing is shared at 
 
 Run as part of the orchestrator's preflight (`references/preflight.md`), after the tool check in `quality-gates.md`:
 
-- **Node** — the session's Node major version matches the project's. ❌ otherwise: say which version to switch to, and that the orchestrator session has to be restarted under it.
+- **Node** — `node -v` from the main checkout's root, and from the scratch worktree below, both match the project's `.nvmrc` major version. ❌ otherwise: the machine isn't switching Node per directory; point the developer at [Node versions](#node-versions).
 - **Install** — a frozen install succeeds in a scratch worktree of the epic branch (create it with `git worktree add`, run the install command, run the test suite once from the scratch worktree's root, then remove it — the test run may ask the developer's permission, which is fine at preflight). ❌ with the error if either fails: every claim would fail the same way. Report how long the install and the suite took; that's the per-ticket overhead.
 - **Gitignored files** — list the files to copy into each new worktree, per item 5 above. Show the list so the developer can spot anything missing or anything that shouldn't be copied.
 
@@ -63,7 +75,7 @@ Once the orchestrator has created a ticket's worktree (or the epic review's):
 The orchestrator puts this block in the worker's prompt, after the list of inputs, filled in from `project.md`:
 
 ```markdown
-Environment: run every command on the host, from your worktree, with <package manager>. Dependencies are already installed; never install, add or remove packages yourself — a dependency change is a sensitive change for the plan. Node <major> is active.
+Environment: run every command on the host, from your worktree, with <package manager>. Dependencies are already installed; never install, add or remove packages yourself — a dependency change is a sensitive change for the plan. Node <major> is picked from the worktree's `.nvmrc`; if `node -v` shows another major version, park with `agent:needs-input`.
 
 - Jest: always pass `--cacheDirectory <state dir>/jest-cache --maxWorkers <jobs>`.
 - Stryker: pass `--concurrency <jobs>`.

@@ -23,7 +23,7 @@ Once a feature is planned, it can write the client's Statement of Work: it asks 
   - The project runs in Docker via `docker-compose`/`docker compose`. All Ruby/Rails commands (tests, RuboCop, RubyCritic, Evilution) run inside the container, never on the host — see `stacks/rails/environment.md`.
 - For React Native (Expo, TypeScript):
   - Jest with the `jest-expo` preset and React Native Testing Library, TypeScript, ESLint and Prettier.
-  - [Stryker](https://stryker-mutator.io/) for mutation testing (`@stryker-mutator/core` and `@stryker-mutator/jest-runner` as dev dependencies) — experimental, so it can be skipped.
+  - [Stryker](https://stryker-mutator.io/) for mutation testing — experimental. It's installed once per machine in `~/.bishop/tools/stryker`, not in the project (auto mode's preflight installs it); see `stacks/react-native/quality-gates.md`.
   - Commands run on the host, under the Node version in `.nvmrc` — see `stacks/react-native/environment.md`. Builds and over-the-air updates stay with the developer.
 
 The prerequisites above are for the ticket workflows. `react-native-upgrade` runs on the host and needs no Linear or Docker. It needs the Node version from the project's `.nvmrc`, and ideally Xcode and the Android SDK. Whatever can't be built locally is verified with EAS builds.
@@ -101,8 +101,8 @@ Linear links a PR to its ticket from the ticket ID in the branch name (`ENG-123_
 
 ### Your project's repo
 
-- [ ] **Test and quality tools** for the project's stack, per its `quality-gates.md`. For Rails, in the Gemfile: RSpec or Minitest, RuboCop, RubyCritic, and Evilution. For React Native, in `package.json`: Jest with `jest-expo`, React Native Testing Library, TypeScript, ESLint, Prettier, and Stryker.
-- [ ] **Node** (React Native): start the orchestrator under the project's `.nvmrc` Node version; every agent inherits it.
+- [ ] **Test and quality tools** for the project's stack, per its `quality-gates.md`. For Rails, in the Gemfile: RSpec or Minitest, RuboCop, RubyCritic, and Evilution. For React Native, in `package.json`: Jest with `jest-expo`, React Native Testing Library, TypeScript, ESLint and Prettier.
+- [ ] **Node** (React Native): the machine switches Node per directory from each project's `.nvmrc`, in every shell, not just interactive ones. With mise, see "Node versions" in `stacks/react-native/environment.md`.
 - [ ] **Per-worker databases** (Rails): each environment has one database, and its name can be changed per worker, either through an environment variable read in `config/database.yml` or by `DATABASE_URL`. See `stacks/rails/environment.md`.
 - [ ] **Shared services written by tests** (Rails) can be separated per worker. For example, search index names can take a per-worker suffix. Otherwise the project runs one agent at a time. See `stacks/rails/environment.md`.
 - [ ] **Recommended**: in the repo's GitHub settings, "Automatically delete head branches", so merged ticket branches clean themselves up.
