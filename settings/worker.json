@@ -125,7 +125,7 @@
       "docker-compose *"
     ],
     "filesystem": {
-      "allowWrite": ["~/.bishop"]
+      "allowWrite": ["~/.bishop", "~/.local/state/mise"]
     },
     "network": {
       "allowUnixSockets": [
