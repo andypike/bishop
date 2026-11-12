@@ -86,7 +86,32 @@
       "Bash(gh api *)",
       "Bash(gh repo *)",
       "mcp__claude_ai_Linear__delete_comment",
-      "mcp__claude_ai_Linear__delete_attachment"
+      "mcp__claude_ai_Linear__delete_attachment",
+      "Bash(eas *)",
+      "Bash(npx eas *)",
+      "Bash(npx eas-cli *)",
+      "Bash(npx expo prebuild*)",
+      "Bash(npx expo run*)",
+      "Bash(npx expo start*)",
+      "Bash(just publish*)",
+      "Bash(just build*)",
+      "Bash(npx expo install *)",
+      "Bash(npm install*)",
+      "Bash(npm i *)",
+      "Bash(npm ci*)",
+      "Bash(npm uninstall *)",
+      "Bash(yarn add *)",
+      "Bash(yarn remove *)",
+      "Bash(yarn install*)",
+      "Bash(pnpm add *)",
+      "Bash(pnpm install*)",
+      "Bash(pnpm remove *)",
+      "Bash(bun add *)",
+      "Bash(bun install*)",
+      "Bash(bun remove *)",
+      "Bash(git -C *)",
+      "Bash(git --git-dir*)",
+      "Bash(git --work-tree*)"
     ]
   },
   "sandbox": {
@@ -103,7 +128,7 @@
       "docker-compose *"
     ],
     "filesystem": {
-      "allowWrite": ["~/.bishop"]
+      "allowWrite": ["~/.bishop", "~/.local/state/mise"]
     },
     "network": {
       "allowUnixSockets": [

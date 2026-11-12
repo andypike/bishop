@@ -14,9 +14,10 @@ References this workflow depends on:
 - [`references/ticket-template.md`](../../references/ticket-template.md) — the structure every ticket description and the feature document follow, and what makes a ticket a good single slice. Read this before Phase 4.
 - [`references/git.md`](../../references/git.md) — the epic branch: naming, and how to create it. Read this before proposing the epic branch name in Phase 3.
 - [`references/architecture.md`](../../references/architecture.md) — what the architecture document settles, how it's built from the style guide, its diagrams and template. Read this before Phase 6.
-- [`style-guide/rails-style-guide.md`](../../style-guide/rails-style-guide.md) — the design rules the architecture follows. Read this before Phase 6.
+- [`references/stack-selection.md`](../../references/stack-selection.md) — how the feature's stack is chosen and recorded. Read this in Phase 2.
+- The stack's style guide, `stacks/<stack>/style-guide.md` — the design rules the architecture follows. Read this before Phase 6.
 
-**Adding architecture to an existing project.** Preflight blocks auto mode on a project without an architecture document. To add one to a project planned before this phase existed, run Phase 1 (the existing feature document and tickets are the brief), Phase 2, then Phases 6–8 against the existing tickets: Phase 8 creates only the architecture document, links it from the feature document, and adds its link to each ticket that isn't Done yet — plus any `blockedBy` links or ticket changes Phase 6 agreed.
+**Adding architecture to an existing project.** Preflight blocks auto mode on a project without an architecture document. To add one to a project planned before this phase existed, run Phase 1 (the existing feature document and tickets are the brief), Phase 2, then Phases 6–8 against the existing tickets: Phase 8 creates only the architecture document, links it from the feature document (adding a `Stacks:` line if it has none), and adds its link and `stack:<id>` label to each ticket that isn't Done yet — plus any `blockedBy` links or ticket changes Phase 6 agreed.
 
 ## Phase 1 — Intake
 
@@ -34,14 +35,16 @@ When material conflicts (e.g. meeting notes revise something in the original bri
 
 ## Phase 2 — Investigation
 
-Read-only exploration of the target codebase, aimed at the feature as a whole rather than any one ticket:
+Read-only exploration of the target codebase — every repo the feature touches — aimed at the feature as a whole rather than any one ticket.
+
+Start by **choosing the stacks and repos**. Run this skill from the client folder that holds the project's repos side by side (or from the repo itself, for a single-repo feature). Take an existing feature document's `Stacks:` line; otherwise ask which repos the feature touches — usually a backend, an app, or both — find each one's checkout per "Finding the checkouts" in `references/git.md`, and detect each one's stack per `references/stack-selection.md`. Announce them in one line and carry on. Then explore each repo:
 
 - What already exists that the feature builds on (models, associations, controllers, views, jobs, integrations) and what is genuinely new.
 - Existing patterns the tickets should follow — don't plan new abstractions where a suitable one already exists.
 - Risky or unclear areas: data migrations on large tables, external services, permissions/authorization, anything shared with other features.
 - Natural seams for slicing: where the first end-to-end path through the feature could go, and what can be layered on after it.
 
-For a large codebase or a broad feature, fan the reading out with `Explore` agents and keep the conclusions, not the file dumps. Nothing needs to run here — no Docker, no tests, no baseline capture; that all belongs to `ticket-workflow` when each ticket is worked.
+For a large codebase, a broad feature, or several repos, fan the reading out with `Explore` agents — at least one per repo — and keep the conclusions, not the file dumps. Where the feature spans repos, note how the app talks to the backend today: its API client, the endpoints it calls, and how payloads are mapped. Nothing needs to run here — no Docker, no tests, no baseline capture; that all belongs to `ticket-workflow` when each ticket is worked.
 
 ## Phase 3 — Feature-level Q&A
 
@@ -51,7 +54,7 @@ Work through the feature with the user until the scope is clear enough to slice.
 - Scope: what's in, what's explicitly out, and what's deferred to later.
 - Behaviour that spans tickets: roles and permissions, error and empty states, notifications, data rules.
 - Cross-cutting technical choices that would otherwise be re-decided in every ticket (where new code lives, which existing pattern to follow).
-- The **epic branch** name, `epic/<feature_snake_name>` (see `references/git.md`). Propose one derived from the feature name; skip this when Phase 1 found an existing feature document, which already names it.
+- The **epic branch** name, `epic/<feature_snake_name>` (see `references/git.md`), the same in every repo. Propose one derived from the feature name; skip this when Phase 1 found an existing feature document, which already names it.
 
 Keep a running **feature decision log**: a short bullet list of what was decided and why, including scope calls. It becomes part of the feature document in Phase 8, and each ticket's own decisions are made later, in that ticket's `ticket-workflow` run — don't try to settle every implementation detail here.
 
@@ -64,6 +67,8 @@ Propose a high-level list of tickets, following the slicing rules in `references
 - A working title.
 - A one or two sentence outcome: what someone can do or see once it ships.
 - Which other proposed tickets it's blocked by, if any.
+
+When the feature spans stacks, a slice that needs both becomes **one ticket per stack** — a backend ticket (the endpoint, its data and rules) and an app ticket (the screens and the API calls), each a vertical slice within its own stack. Name each ticket's stack. The app ticket isn't blocked by the backend one: both build against the API contract designed in Phase 6.
 
 Present them in a sensible working order, with the first unblocked slice being the thinnest end-to-end path through the feature. Then cross-check the list against the brief and the decision log: call out any requirement that doesn't map to a ticket, and any ticket that doesn't trace back to a requirement.
 
@@ -89,7 +94,7 @@ Update the working draft after each approved ticket.
 
 With every ticket written, design the feature's shared architecture, per `references/architecture.md`: the data model, the components, who introduces each, the conventions for shared files, and the diagrams that explain them. It's built from the style guide and the Phase 2 investigation, and its job is to let tickets be worked in parallel without colliding.
 
-Present it **one section at a time**, as with tickets: Style guide, Data model, Components, Flows (with their diagrams), Shared files, Decisions, Left to tickets. Revise each until the user approves it, then move on. Add the approved sections to the working draft.
+Present it **one section at a time**, as with tickets: Style guide, Data model, API contract (when the feature spans stacks), Components, Flows (with their diagrams), Shared files, Decisions, Left to tickets. Revise each until the user approves it, then move on. Add the approved sections to the working draft.
 
 Designing it often shows the breakdown needs a change: a component two tickets both need, a dependency the `blockedBy` links missed, groundwork big enough to be its own ticket. Raise each one as it appears, agree the change with the user, and update the affected tickets in the draft — don't leave the tickets and the architecture disagreeing. When a component sits in a ticket, add it to that ticket's technical notes by its architecture name.
 
@@ -101,24 +106,26 @@ Before anything goes to Linear, review the tickets and the architecture as a who
 
 - **Coverage**: every in-scope requirement from the brief and decision log is covered by at least one ticket's acceptance criteria.
 - **Overlap**: no two tickets build the same thing.
-- **Ownership**: every component, table, and column in the architecture is introduced by exactly one ticket, and every ticket that uses one is blocked by the ticket that introduces it.
+- **Ownership**: every component, table, column, and endpoint in the architecture is introduced by exactly one ticket, and every ticket that uses one is blocked by the ticket that introduces it — except app tickets using contract endpoints, which instead list them in their technical notes.
+- **Contract**: when the feature spans stacks, every endpoint an app ticket calls is in the API contract, introduced by a backend ticket.
 - **Dependencies**: blocked-by links are only where one ticket genuinely needs another first, and there are no cycles.
 - **Out of scope**: everything deferred is written down, so it isn't lost.
 
-**Gate**: present the full summary (project, epic branch, titles, order, dependencies, coverage, and the architecture's components and owners) and get explicit approval to create everything in Linear and the epic branch on GitHub.
+**Gate**: present the full summary (project, repos and stacks, epic branch, titles with each ticket's stack, order, dependencies, coverage, and the architecture's components, endpoints and owners) and get explicit approval to create everything in Linear and the epic branch in each repo on GitHub.
 
 ## Phase 8 — Create in Linear
 
 In this order:
 
-1. **Epic branch**: if it doesn't exist on `origin` yet, create it from the up-to-date root branch, per `references/git.md`. Doing this first means a push failure (permissions, wrong remote) surfaces before anything is written to Linear.
-2. **Feature document**: create a Linear document in the project (structure in `ticket-template.md`) holding the epic branch, feature summary, sources supplied, the feature decision log, the ticket list, and what's out of scope. When extending an existing feature, update its document instead.
+1. **Epic branch**: in each repo the feature touches, if it doesn't exist on `origin` yet, create it from that repo's up-to-date root branch, per `references/git.md`. Doing this first means a push failure (permissions, wrong remote) surfaces before anything is written to Linear.
+2. **Feature document**: create a Linear document in the project (structure in `ticket-template.md`) holding the epic branch, the `Stacks:` line, feature summary, sources supplied, the feature decision log, the ticket list, and what's out of scope. When extending an existing feature, update its document instead.
 3. **Architecture document**: create it in the project (template in `references/architecture.md`), linking to the feature document, then add its link to the feature document. When extending an existing feature, update its architecture document instead, keeping what earlier tickets built.
-4. **Tickets**, in dependency order — blockers first, so each ticket's `blockedBy` can reference the identifiers already created. Set the team, project, title, description (including links to the feature and architecture documents), and `blockedBy`. Every ticket goes in the confirmed project. Don't set estimates, labels, priority, milestones, assignees, or state — leave those to the team's defaults. In particular, leave `agent:claimable` off: the developer releases tickets to agents.
-5. **Fill in the real identifiers**: the feature document's ticket list, and every "Introduced by" in the architecture document, once all tickets exist.
+4. **Stack labels**: make sure the team's `stack` label group has the feature's `stack:<id>` label, creating the group or label if it's missing (see `references/stack-selection.md`).
+5. **Tickets**, in dependency order — blockers first, so each ticket's `blockedBy` can reference the identifiers already created. Set the team, project, title, description (including links to the feature and architecture documents), and `blockedBy`. Every ticket goes in the confirmed project. Set the ticket's `stack:<id>` label. Don't set estimates, any other labels, priority, milestones, assignees, or state — leave those to the team's defaults. In particular, leave `agent:claimable` off: the developer releases tickets to agents.
+6. **Fill in the real identifiers**: the feature document's ticket list, and every "Introduced by" in the architecture document, once all tickets exist.
 
 If a creation call fails partway through, stop and report what was created and what wasn't — don't retry blindly and risk duplicates. Check the project's issues before resuming.
 
 ## Phase 9 — Handoff
 
-Report back a table of the created tickets (identifier, title, blocked by), the feature and architecture document links, and the epic branch, and suggest which ticket to start with — the first one with no blockers. From there, each ticket is worked either interactively with `ticket-workflow` ("let's work on ENG-1234"), or in auto mode: move tickets to Todo, mark them `agent:claimable`, and run the orchestrator for this project.
+Report back a table of the created tickets (identifier, title, stack, blocked by), the feature and architecture document links, and the epic branch, and suggest which ticket to start with — the first one with no blockers. From there, each ticket is worked either interactively with `ticket-workflow` in its stack's repo ("let's work on ENG-1234"), or in auto mode: move tickets to Todo, mark them `agent:claimable`, and run the orchestrator for this project.

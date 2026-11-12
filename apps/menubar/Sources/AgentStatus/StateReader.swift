@@ -20,7 +20,8 @@ struct StatusFile: Decodable {
     let tickets: [Ticket]?
 }
 
-/// Builds the view of every project and ticket from the files under ~/.bishop.
+/// Builds the view of every project and ticket from the files under ~/.bishop/projects,
+/// one folder per Linear project.
 /// Read-only: it never writes a file or calls Linear.
 enum StateReader {
     static let quietAfter: TimeInterval = 20 * 60
@@ -39,11 +40,9 @@ enum StateReader {
 
     static func read(root: URL, now: Date = Date()) -> [ProjectState] {
         var projects: [ProjectState] = []
-        for repo in subdirectories(of: root) where repo.lastPathComponent != "worktrees" {
-            for dir in subdirectories(of: repo) where dir.lastPathComponent != "worktrees" {
-                if let project = readProject(dir, repo: repo.lastPathComponent, now: now) {
-                    projects.append(project)
-                }
+        for dir in subdirectories(of: root.appendingPathComponent("projects")) {
+            if let project = readProject(dir, now: now) {
+                projects.append(project)
             }
         }
         return projects.sorted {
@@ -51,7 +50,7 @@ enum StateReader {
         }
     }
 
-    static func readProject(_ dir: URL, repo: String, now: Date) -> ProjectState? {
+    static func readProject(_ dir: URL, now: Date) -> ProjectState? {
         let statusURL = dir.appendingPathComponent("status.json")
         let status = (try? Data(contentsOf: statusURL))
             .flatMap { try? JSONDecoder().decode(StatusFile.self, from: $0) }
@@ -96,7 +95,7 @@ enum StateReader {
 
         return ProjectState(
             id: dir.path,
-            name: status?.project ?? "\(repo) / \(dir.lastPathComponent)",
+            name: status?.project ?? dir.lastPathComponent,
             url: status?.project_url.flatMap(URL.init(string:)),
             loop: status?.loop,
             pausedUntil: status?.paused_until.flatMap { ISO8601DateFormatter().date(from: $0) },
