@@ -35,6 +35,7 @@ Run as part of the orchestrator's preflight (`references/preflight.md`), before 
 Before running anything, check the target project for:
 
 - Test framework: RSpec (`spec/spec_helper.rb`, `rspec-rails` in Gemfile.lock) vs Minitest (`test/test_helper.rb`).
+- Coverage tool: `simplecov` in Gemfile.lock, and how it's switched on. Read the test helper that calls `SimpleCov.start`: if the call is guarded by an environment variable (`if ENV['COVERAGE']`), every test-suite run that should measure coverage must set it (`COVERAGE=true`). Without it the suite passes and no coverage is recorded.
 - `rubocop` in Gemfile / `.rubocop.yml` present.
 - `rubycritic` in Gemfile.
 - `evilution` in Gemfile.
@@ -45,7 +46,8 @@ If any of RuboCop, RubyCritic, or Evilution is missing, **stop and ask** the dev
 
 Run against the unchanged codebase, in parallel with the Q&A conversation:
 
-- **Tests + coverage**: the project's existing test command (`bundle exec rspec` or `bin/rails test`), with whatever coverage tool the project already uses (e.g. SimpleCov). Record pass/fail count and coverage %.
+- **Tests + coverage**: the project's existing test command (`bundle exec rspec` or `bin/rails test`), with whatever coverage tool the project already uses (e.g. SimpleCov), switched on as Tool detection found. Record pass/fail count and coverage %.
+- **Coverage %**: don't look for it in the console. Some SimpleCov formatters (for example `simplecov-rcov`) print no percentage. SimpleCov always writes the overall figure to `coverage/.last_run.json` (`result.line`, plus `result.branch` when branch coverage is on), a dotfile, and per-file results to `coverage/.resultset.json`. Read it as soon as the run finishes and record the figure, because the next run overwrites it. If the file is missing or older than the run, coverage wasn't on: report it as not measured, and say why, rather than leaving it out.
 - **RuboCop**: `bundle exec rubocop --format json` — record total offense count (and count by cop, if useful later).
 - **RubyCritic**: `bundle exec rubycritic --format console --minimum-score 0` — record the overall score (never fail the baseline run itself; `0` just means "don't exit non-zero, we're only measuring").
 
@@ -53,7 +55,7 @@ Mutation testing is **not** part of the baseline — there's no diff yet to muta
 
 ## After implementation (Quality gate phase)
 
-- **Tests**: full suite must be green.
+- **Tests**: full suite must be green, run with coverage on, as in the baseline. Read the coverage % from `coverage/.last_run.json` the same way.
 - **RuboCop autocorrect**: `bundle exec rubocop -a` (safe autocorrect only — never `-A`/unsafe). Re-run plain `bundle exec rubocop --format json` afterwards; whatever remains gets reported, not auto-fixed. Offense count must not exceed the baseline.
 - **RubyCritic**: `bundle exec rubycritic --format console --minimum-score 0` again; score must not regress vs baseline, ideally improves.
 - **Evilution (mutation testing)** — scoped to only the files/lines changed for this ticket, since we care about coverage of the change, not the whole file history:

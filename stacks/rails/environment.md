@@ -12,8 +12,15 @@ Interactive mode runs commands in the developer's own stack, as described in the
    docker compose version >/dev/null 2>&1 && echo "docker compose" || echo "docker-compose"
    ```
 3. **Identify the app service** — the service that runs the Rails app (has the Gemfile mounted, is where you'd run `bundle exec`). Usually named `web` or `app`, but confirm from the compose file rather than assuming: look for the service whose `build.context`/`Dockerfile` is the project root, or that mounts the project directory as a volume. If more than one service plausibly fits, ask which one.
+4. **Check how the code gets into the container.** A plain bind mount of the checkout (`.:/usr/src/app`) is live: the container always sees this checkout's files. A named or external volume (for example a `docker-sync` override such as `shop_sync:/usr/src/app`) is a copy kept up to date by a sync process. If that process isn't running, or lags, tests run against stale code and results are silently wrong. In that case don't use `exec`, or `run --rm` as it stands; bind-mount the checkout over the volume instead:
+   ```bash
+   docker compose run --rm -v "$PWD":<app path> <service> <command>
+   ```
+   with `<app path>` the volume's mount point in the service, and the same compose files the developer uses. Announce it in one line (`Running tests with this checkout bind-mounted: the app's code is on a docker-sync volume`), then use this form for every command.
 
 ## Choosing `exec` vs `run --rm`
+
+Unless step 4 above found the code on a synced volume, in which case always use its bind-mounted `run --rm`:
 
 - If the service is already running (`docker compose ps --status running` includes it), use `exec`:
   ```bash
