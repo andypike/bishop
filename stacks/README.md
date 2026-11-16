@@ -46,6 +46,20 @@ How the gate is judged is generic, in [`references/quality-gates.md`](../referen
   - **Worker prompt** — the block the orchestrator adds to a worker's prompt;
   - **Cleaning up** — what's undone once the ticket reaches QA or Done.
 
+### Optional: Screenshots
+
+A stack that can capture its UI adds a **Screenshots** section to two files, per [`references/screenshots.md`](../references/screenshots.md). Without them, its tickets have no screenshots.
+
+- In `stack.md`:
+  - **UI paths**: the files whose changes count as UI.
+  - **Targets**: each target, with its views and their sizes.
+  - **When not to capture**: changes that can't be captured, if any.
+- In `environment.md`:
+  - **Setup**: each target's one-off setup, saying which parts change the project.
+  - **Readiness check**: the commands that tell whether a target can capture now.
+  - **Capture**: how a journey becomes images in the media folder.
+  - **Worker mode**: what keeps parallel captures apart.
+
 ## Adding a stack
 
 1. Create `stacks/<id>/` with the four files above, every section filled in.
