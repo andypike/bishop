@@ -34,6 +34,7 @@ Some projects predate this guide and won't meet it. That's expected — the goal
 - Avoid long actions, since they often signal business logic that belongs in a model or command object.
 - No business logic, calculations, email sending, or multi-object operations in controllers.
 - Prefer RESTful routes. Custom verb actions (e.g., `post "activate"`) usually mean a missing noun/resource (e.g., `resource :trial, only: [:create]`).
+- Call authorize as the first line of each action body, not in a before_action, so reading an action on its own shows its permission check.
 
 ## Database & Migrations
 
