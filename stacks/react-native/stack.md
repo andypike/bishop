@@ -46,7 +46,7 @@ How `references/architecture.md` applies to a React Native feature.
 - **Screens & Navigation** — the new screens, which navigator or stack each belongs to, its route name and params, and how users reach it (including deep links).
 - **Components** — which pieces are shared components and which belong to one screen; the shared ones by name.
 - **State & Data Fetching** — where the feature's data lives (the project's existing state approach: its store, context or hooks), what's persisted on the device, and which hook or store action fetches what.
-- **API & Backend** — the endpoints the app calls, the API types and mappers they need, and the error cases the app handles. When the feature spans the backend too, this is the API contract the backend tickets build against.
+- **API & Backend** — the endpoints the app calls, the API types and mappers they need, and the error cases the app handles. When the feature spans the backend too, this is the API contract: the backend tickets build it first, and the app tickets that call it are blocked by them.
 - **Styling** — new theme tokens, if any; everything else uses the existing ones.
 - **User-facing Copy** — where the feature's strings live (the project's translation file, if it has one).
 - **Native & Config** — permissions, native modules, config changes, and whether the feature needs a new build.

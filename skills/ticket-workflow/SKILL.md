@@ -72,7 +72,7 @@ Fetch the ticket via whatever Linear MCP tools are available in this session (se
 
 If the ticket links to a feature document (tickets created by the `feature-planning` skill do), read it too — it holds the wider feature context and cross-ticket decisions. Treat it as background: this ticket's own description, acceptance criteria, and comments define the scope.
 
-If it links to an architecture document, read that as well. It isn't background: it's the shared design every ticket in the feature builds against — the data model, component names and layers, and which ticket introduces each — so tickets worked in parallel fit together. Note the components this ticket introduces and the ones it uses from other tickets.
+If it links to an architecture document, read that as well. It isn't background: it's the shared design every ticket in the feature builds against — the data model, component names and layers, and which ticket introduces each — so tickets worked in parallel fit together. Note the components this ticket introduces and the ones it uses from other tickets. When the ticket is blocked by a ticket in another stack (an app ticket calling an endpoint a backend ticket introduced), also read that ticket's final comment: the endpoint as it was built, and any approved change to the API contract.
 
 **Check the status before going further.** A status of **Rejected** means the ticket was already implemented once and then failed QA or client review — it's a rework, not a fresh build:
 
