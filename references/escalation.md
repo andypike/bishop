@@ -59,6 +59,8 @@ Every parking comment opens with a `**🤖 Agent — …**` heading. On resume, 
 
 **Slices** — <the ordered TDD slices>
 
+**Screenshots** — <the journey, its data and targets, per references/screenshots.md; or why there are none, e.g. "no UI changes". Omit for a stack without screenshots>
+
 **Decisions** — <decision log: what was decided and why, including scope calls>
 
 **Assumptions** — <decisions the ticket doesn't settle, as above>

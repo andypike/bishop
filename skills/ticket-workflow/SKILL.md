@@ -15,6 +15,7 @@ Reference files this workflow depends on, kept in this plugin so they're consist
   - `stacks/<stack>/environment.md` — where and how every command runs. Read this before running anything at all, including the baseline capture.
 - [`references/git.md`](../../references/git.md) — epic and ticket branches, per-slice commits, pushing, and opening the PR. Read this before Phase 5 — nothing gets written until the branch is settled.
 - [`references/architecture.md`](../../references/architecture.md) — what the feature's architecture document settles, and how a ticket raises a change to it. Read this in Phase 1 when the ticket links to one.
+- [`references/screenshots.md`](../../references/screenshots.md) — before and after screenshots of the UI the ticket changes, for the PR and the final comment. Read this in Phase 2 when the stack has a **Screenshots** section; the capture commands are in the stack's `environment.md`.
 
 ## Modes
 
@@ -38,6 +39,7 @@ Each line is the time, the phase, then what's happening, separated by ` · `. Ap
 - **Each slice** in Phase 5: started (its number out of the total, and its name), red, green, committed.
 - **Each quality gate check** in Phase 6, before it runs and with its result: `Phase 6 · <check> · running`, then its result, e.g. `Phase 6 · Evilution · 94% (3 survivors)`. Log a retry as `Phase 6 · retry 1/2`.
 - **The correctness check** in Phase 7: running, then its result.
+- **Screenshots**, before and after: running, then the result for each target, e.g. `Phase 6 · screenshots after · browser 4 images`, or `· browser skipped: <reason>`.
 - **Every exit**: `Parked · agent:needs-input · <the question, in a few words>`, or `PR opened · <PR URL>`.
 
 Log before any command that could run for minutes, so the line's age shows how long it has been running.
@@ -98,6 +100,7 @@ Read-only exploration of the target codebase:
 - Note which parts of the style guide are most relevant to this change.
 - **Tool detection**: check which of the stack's tools are configured, per "Tool detection" in the stack's `quality-gates.md`. If something's missing, flag it and ask before adding it as a dev dependency.
 - **Environment detection**: work out where and how commands run, per the stack's `environment.md` (for Rails: the compose file, the Compose CLI, and the app service). Every command from here on — baseline capture included — runs that way.
+- **Screenshots**: if the stack has a Screenshots section and the ticket looks likely to touch its UI paths, run the readiness check for each target that isn't opted out, and ask once about any that isn't ready (set it up now, skip it for this ticket, or opt out for this repo), per "Opting out" in `references/screenshots.md`.
 
 **As soon as investigation is far enough along to know what to run, kick off baseline metric capture in the background** (every check in the stack's table except mutation testing — commands in the stack's `quality-gates.md`). These can be slow; don't block the conversation on them. Mutation testing is *not* run here — there's no diff yet to mutate against.
 
@@ -106,6 +109,7 @@ Read-only exploration of the target codebase:
 - The stack comes from your prompt; don't choose it again. Do check the repo matches it, per `references/stack-selection.md`, and park with `agent:needs-input` if it doesn't.
 - Run every command the way your prompt and the stack's `environment.md` say for workers (for Rails: through the worker prefix, never `exec` into the shared service).
 - Preflight guarantees the quality tools are installed, except any your prompt says the developer skipped for this project: leave those out and report them as skipped in the baseline and the PR. If another tool is missing anyway, park with `agent:needs-input` rather than adding it.
+- Screenshot targets come from your prompt: capture only the ones it lists as ready. Never set a target up or change the opt-out file; the rest get a skip line with the reason your prompt gives.
 - The worker exits when it parks at the plan gate, so the baseline must outlive this run: let it finish before parking, and write its results to `<state dir>/baseline.md`. Run it in the foreground, per "Knowing a run has finished" in `references/quality-gates.md`.
 
 ## Phase 3 — Clarification Q&A
@@ -117,6 +121,8 @@ Work through logic gaps, technical architecture, and order of operations with th
 - Order of operations / sequencing, if the ticket has multiple moving parts.
 
 Keep a running **decision log**: a short bullet list of what was decided and why, including any explicit scope calls ("X is out of scope for this ticket"). Its first line is the stack.
+
+If the plan touches the stack's UI paths and a screenshot target is ready, the plan includes a **Screenshots** section: the journey, its data, and the targets, per "The journey, in the plan" in `references/screenshots.md`. It's agreed at this gate with the rest of the plan.
 
 **Gate**: don't move to Phase 4 until the user explicitly confirms the plan. Baseline metrics keep running in the background during this phase.
 
@@ -137,6 +143,8 @@ Collect the baseline results (should be done or close to it by now) for comparis
 
 **Before anything else in this phase** — not even a test file — settle the branch per `references/git.md`: check the current branch matches `<TICKET-ID>_*` (or `<TICKET-ID>_feedback_*` for a rejected ticket); if not, gate on whether to create it now (off an up-to-date root branch).
 
+**Before the first slice**, if the plan has a Screenshots section, take the **before** screenshots of the branch as it stands, per `references/screenshots.md` and the stack's `environment.md`. Steps the base can't reach yet are recorded as new. Skip this when resuming mid-implementation: they were taken already.
+
 This is the core loop, and it must stay small-batch — **never write the whole test suite up front**. For each slice:
 
 1. Pick the smallest next slice of behavior (one method, one branch, one scenario — not "the whole feature").
@@ -154,7 +162,7 @@ Only after this loop is quality-gate work appropriate — don't run the linters,
 **Auto mode:**
 
 - **Branch**: the orchestrator created the worktree on the ticket branch, so only verify it — `git branch --show-current` matches the expected name. If it doesn't, park with `agent:needs-input`; never create or switch branches yourself.
-- **Epic**: before the first slice, bring the latest epic into the branch per "Bringing in the epic" in `references/git.md`, and log `Phase 5 · epic merged · <short SHA>`. With no commits of its own yet, this is a fast-forward. Skip it when resuming after a park mid-implementation. If the merge stops for any reason, `git merge --abort` and park with `agent:needs-input`.
+- **Epic**: before the first slice, bring the latest epic into the branch per "Bringing in the epic" in `references/git.md`, and log `Phase 5 · epic merged · <short SHA>`. With no commits of its own yet, this is a fast-forward. Skip it when resuming after a park mid-implementation. If the merge stops for any reason, `git merge --abort` and park with `agent:needs-input`. Take the before screenshots after this merge, so they show the PR's base.
 - **Slices** come from the approved plan, in order. Each slice runs steps 1, 2, 4 and 6 without the gates: write the failing test and watch it go red, implement until it's green, then commit (re-check the branch, stage only this slice's files).
 - **Escalation**: check every slice against the triggers in `references/escalation.md`, and post the slice's assumptions before moving on.
 - **Deployment tasks**: when a slice adds something that must run at deploy time (see "Deployment tasks" in the stack's `stack.md`; for Rails, a migration, a rake or data task, a new environment variable) — add it to `<state dir>/deployment-tasks.md` in that slice, following "Deployment tasks" in `references/ticket-template.md`. Keep the file even when it's empty: write `None` so the orchestrator can tell "nothing needed" from "not recorded".
@@ -171,6 +179,8 @@ Follow `references/quality-gates.md` and the stack's `quality-gates.md` exactly 
 - Architecture check, when the ticket has an architecture document: the diff builds the components this ticket introduces with the document's names, layers and responsibilities, uses other tickets' components rather than re-creating them, and follows its shared-file conventions. A departure that wasn't approved is a finding.
 
 **Gate**: report baseline-vs-after plus all findings to the user. If anything needs fixing, loop back into Phase 5 for that fix (small batch, reviewed), then re-run the affected checks — don't re-run everything from scratch unless the fix was broad.
+
+**Once the gate is clean**, if the plan has a Screenshots section, take the **after** screenshots, per `references/screenshots.md`, and show them to the user. A failed capture is a skip line, never a reason to hold the ticket. If a later fix loops back through this phase, take them again.
 
 **Auto mode:** the gate is a hard stop, with no developer to decide which findings matter:
 
@@ -207,6 +217,7 @@ Post a final comment on the ticket — this is the permanent record of what ship
 - **The correctness check's verdict** — including a second pass if the first one found gaps. A correctness check that finds nothing is worth stating explicitly ("no gaps found"), not omitting.
 - **Architecture changes** — any approved departure from the architecture document, and whether the document has been updated. Omit when there were none.
 - **Deployment tasks** — every command this ticket needs run at deploy time (anything beyond deploying the code, per the stack's `stack.md`), one per line, per "Deployment tasks" in `references/ticket-template.md`. "None" when there are none.
+- **Screenshots** — the before and after table, with the images uploaded to Linear, and any skip lines, per "Uploading" in `references/screenshots.md`. Omit when the ticket had no Screenshots section.
 
 Then **gate**: ask whether to push the branch and open the PR. If approved, follow the push and PR steps in `references/git.md`; otherwise both stay with the user.
 
@@ -215,6 +226,6 @@ If the ticket has deployment tasks and a feature document, offer to add them to 
 **Auto mode:**
 
 1. Check `<state dir>/deployment-tasks.md` against the diff, per "Deployment tasks" in the stack's `stack.md` (for Rails: every migration and new rake task in it is listed), and the file says `None` if there are none. Never edit the feature document — the orchestrator adds the list there when the PR merges.
-2. Push the branch and open the PR against the epic branch, per `references/git.md`. The PR body carries the same record as the final comment, plus every assumption from the ticket.
+2. Push the branch and open the PR against the epic branch, per `references/git.md`, attaching the screenshots. The PR body carries the same record as the final comment, plus every assumption from the ticket.
 3. Post the final comment under a `**🤖 Agent — Complete**` heading, with the PR link at the top.
 4. Swap the label to `agent:pr-open` and exit. Linear moves the ticket to In Review when the PR opens; the orchestrator posts token usage after this run ends.

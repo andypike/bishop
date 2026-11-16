@@ -134,6 +134,8 @@ gh pr create --base <epic-branch> --head <ticket-branch> --title "<TICKET-ID>: <
 
 Run it alone, as with `git push` above.
 
+**With screenshots**, add `--attach <file>` for each image the body links, before and after alike, per "Uploading" in `references/screenshots.md`. gh uploads them and swaps the local paths for GitHub URLs. If an upload fails, gh still creates the PR, exits with an error and prints its URL. **Never run `gh pr create` again**: finish with `gh pr edit <number> --body-file <body file> --attach <file> …`. If that fails too, replace the table with `Screenshots skipped: upload failed` and update the body without attachments.
+
 PR body template:
 
 ```markdown
@@ -141,6 +143,9 @@ Closes <TICKET-ID> — <Linear ticket URL>
 
 ## Summary
 <what was implemented, briefly>
+
+## Screenshots
+<the before and after table and any skip lines, per references/screenshots.md; omit the section when the ticket had no Screenshots section>
 
 ## Quality metrics (baseline → after)
 <the lines in the stack's Metrics section (stacks/<stack>/quality-gates.md); a skipped tool says "skipped">
