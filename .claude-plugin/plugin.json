@@ -1,6 +1,6 @@
 {
   "name": "bishop",
-  "description": "Ticket-driven Rails workflow: break a new feature into vertical-slice Linear tickets, then work each ticket \u2014 read it, clarify the approach, implement in small TDD batches, and run a structured quality gate (tests, RuboCop, RubyCritic, mutation testing, style guide, correctness-vs-ticket check) before calling it done. Also upgrades Expo / React Native apps one SDK hop at a time, guided by each project's upgrade history. Writes client Statements of Work from planned Linear projects.",
+  "description": "Ticket-driven workflow for Ruby on Rails, with each tech stack pluggable: break a new feature into vertical-slice Linear tickets, then work each ticket — read it, clarify the approach, implement in small TDD batches, and run a structured quality gate (tests, linters, mutation testing, style guide, correctness-vs-ticket check) before calling it done. Also upgrades Expo / React Native apps one SDK hop at a time, guided by each project's upgrade history. Writes client Statements of Work from planned Linear projects.",
   "version": "0.1.0",
   "author": {
     "name": "Andy Pike",

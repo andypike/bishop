@@ -4,12 +4,16 @@ The structure `feature-planning` uses for each ticket it creates and for the fea
 
 ## What makes a good ticket
 
-- **A vertical slice.** Each ticket delivers a thin end-to-end piece of behaviour — whatever schema, model, controller, view, and tests that behaviour needs — rather than one technical layer. Someone should be able to demo or QA it on its own.
+- **A vertical slice, within one stack.** Each ticket delivers a thin end-to-end piece of behaviour — whatever layers that behaviour needs in its stack (for Rails: schema, model, controller, view), and their tests — rather than one technical layer. Someone should be able to demo or QA it on its own. When a feature spans stacks, a piece of behaviour that needs both becomes a backend ticket and an app ticket, joined by the architecture document's API contract (see `references/architecture.md`): each is a vertical slice of its own stack, and a backend ticket is QA'd through its API.
 - **A single task.** One branch, one reviewable PR, one `ticket-workflow` run. If the acceptance criteria describe two independent things a user could do, it's probably two tickets.
 - **Thin first.** The first slice is the narrowest working path through the feature (happy path, one role, minimal fields). Later slices add variations, edge cases, and polish on top.
-- **No layer-only tickets by default.** Don't split out "add the migration" or "build the model" on their own — fold the schema a slice needs into that slice. The exception is genuinely standalone groundwork that is large or risky on its own (e.g. a backfill on a big table, a new external integration) — call it out as such and agree it with the user.
+- **No layer-only tickets by default.** Don't split out "add the migration" or "build the model" on their own — fold the groundwork a slice needs into that slice. The exception is genuinely standalone groundwork that is large or risky on its own (e.g. a backfill on a big table, a new external integration) — call it out as such and agree it with the user.
 - **Self-contained.** It makes sense without reading the feature document; it links to that document for wider context, and to the architecture document for the shared design it builds against.
 - **Blocked-by only when real.** Add a dependency only when one ticket can't be built without the other already existing — not just because it's later in the working order.
+
+## Stack label
+
+Every ticket carries the `stack:<id>` label of the stack it's built in (see `references/stack-selection.md`). It's the only label `feature-planning` sets.
 
 ## Ticket description
 
@@ -60,6 +64,7 @@ The Linear document created in the project, linked from every ticket.
 # <Feature name>
 
 Epic branch: epic/<feature_snake_name>
+Stacks: <stack ID> — <GitHub owner/repo>
 Architecture: [<Feature name> — Architecture](<architecture document URL>)
 
 ## Summary
@@ -93,12 +98,13 @@ None yet.
 
 ### Deployment tasks
 
-Everything that has to be run when the feature's merged work is deployed: database migrations, rake tasks, data backfills, and any other step beyond deploying the code. It's one deduplicated list for the whole feature, built up as tickets merge, so whoever deploys runs it top to bottom.
+Everything that has to be run when the feature's merged work is deployed, beyond deploying the code. What counts, how each step is written, and anything that must come first are in "Deployment tasks" in the stack's `stack.md` (for Rails: migrations, rake tasks and data backfills, with `bin/rails db:migrate` first). It's one deduplicated list for the whole feature (one per repo, for a feature spanning repos), built up as tickets merge, so whoever deploys runs it top to bottom.
 
-- **One command per line**, written as it runs on the deployed app (`bin/rails db:migrate`), never with a Docker or worker prefix. A step that isn't a command (a new environment variable or credential) is one short line saying what to set, without its value.
-- **No duplicates.** A line already in the list isn't added again. `bin/rails db:migrate` appears once, however many tickets add migrations.
-- **Order.** `bin/rails db:migrate` comes first, since other tasks usually depend on the schema; everything else follows in the order tickets merged.
+- **One command per line**, written as it runs on the deployed app, never with a Docker or worker prefix. A step that isn't a command (a new environment variable or credential) is one short line saying what to set, without its value.
+- **No duplicates.** A line already in the list isn't added again: a command appears once, however many tickets need it.
+- **Order.** Anything the stack says comes first goes first; everything else follows in the order tickets merged.
 - **Only merged work.** A ticket's tasks are added when it reaches QA or Done, not when its PR opens: an unmerged PR has nothing to deploy.
+- **One list per repo** when the `Stacks:` line names more than one: a `### <owner/repo>` heading for each, since each repo deploys separately. When one repo's work depends on another's being deployed first (an app relying on a new API endpoint), its list says so, per the stack's deployment tasks.
 - **After a deploy**, the developer removes the lines that were run. A later ticket adds a command again if it needs it again.
 
 In auto mode only the orchestrator writes this section (see `skills/orchestrate/SKILL.md`): workers run in parallel, and one writer means no edit overwrites another. Workers record their own ticket's tasks instead, per `skills/ticket-workflow/SKILL.md`.

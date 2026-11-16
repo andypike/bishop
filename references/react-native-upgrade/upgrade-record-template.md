@@ -5,6 +5,7 @@ The format for `docs/upgrades/expo-<N>-<YYYY-MM>.md` in the target project, writ
 ~~~markdown
 # Expo <N> Upgrade — <Month YYYY>
 
+**Gotchas label**: <this project's neutral label in Bishop's gotchas.md, e.g. `App A`: reuse the one in earlier records; a project without one takes the next unused letter>
 **Branch**: `<branch>`
 **Ticket**: <ticket ID, or omit the line>
 **Completed**: <YYYY-MM-DD>

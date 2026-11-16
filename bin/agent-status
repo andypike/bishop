@@ -5,13 +5,13 @@
 #
 # Usage: agent-status [<state dir>] [-n <seconds>] [--all] [--once]
 #
-#   <state dir>  ~/.bishop (default), one repo's folder, or one project's folder
+#   <state dir>  ~/.bishop/projects (default), or one project's folder in it
 #   -n           seconds between refreshes (default 10)
 #   --all        also show tickets that have been cleaned up
 #   --once       print once and exit
 set -euo pipefail
 
-root=$HOME/.bishop
+root=$HOME/.bishop/projects
 interval=10
 show_all=false
 once=false
@@ -60,13 +60,14 @@ ticket_dirs() {
     sed 's|/[^/]*$||' | sort -u
 }
 
-# "<repo> / <project>" relative to the root, or the root's own name when the
-# root is a single project's folder.
+# The project's folder name, from the ticket dir's parent: under the default
+# root that's <project>/<ticket>; when the root is one project's folder, the
+# root's own name.
 project_name() {
   local rel=${1#"$root"/}
   local project=${rel%/*}
   [ "$project" = "$rel" ] && project=${root##*/}
-  echo "${project//\// / }"
+  echo "${project%%/*}"
 }
 
 render() {
