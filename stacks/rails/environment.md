@@ -51,13 +51,25 @@ docker compose exec web bin/rails db:prepare   # only if a migration is part of 
 
 ## Screenshots
 
-How the `browser` target captures a journey, per [`references/screenshots.md`](../../references/screenshots.md). The journey runs as a one-off system spec that is written for the ticket and never committed. It uses the test database, the project's factories and its sign-in helpers. The browser is a headless Chromium in its own container, which Cuprite drives over a websocket. The browser loads pages from a Capybara server inside the app container, so the two containers have to reach each other on the project's Docker network.
+How the `browser` target captures a journey, per [`references/screenshots.md`](../../references/screenshots.md). The journey runs as a one-off browser spec that is written for the ticket and never committed. It uses the test database, the project's factories and its sign-in helpers, and drives a headless Chromium with Cuprite.
 
-The examples use a fictitious project: Compose project `shop`, app service `web`, ticket ENG-123.
+There are two ways to get a browser, and the project's setup decides which:
+
+- **A browser in the app image.** The app's image has Chromium, and the project already drives it with Cuprite (usually for its JavaScript specs). Use them as they are: nothing to set up, and each test container runs its own browser.
+- **A browser container.** The image has no browser. Chromium runs in its own container, which Cuprite drives over a websocket, and the browser loads pages from a Capybara server inside the app container. The two containers reach each other on the project's Docker network. This needs some one-off setup.
+
+Prefer the app image's browser when there is one. The examples use a fictitious project: Compose project `shop`, app service `web`, ticket ENG-123.
 
 ### Setup
 
-There are four parts. Parts 1 to 3 change the project, so the developer adds them, or approves the agent adding them as their own commit. Part 4 changes only the developer's machine.
+**A browser in the app image** needs nothing, when both of these are true:
+
+- **The project registers a Cuprite driver**, usually in `spec/support/capybara.rb`, as `Capybara.javascript_driver` or a named driver its specs use.
+- **The app image has Chromium.** Check with `command -v chromium chromium-browser google-chrome`, run through the app container.
+
+If the project uses Selenium instead, or has no browser driver, use a browser container.
+
+**A browser container** has four parts. Parts 1 to 3 change the project, so the developer adds them, or approves the agent adding them as their own commit. Part 4 changes only the developer's machine.
 
 **1. The gem**, in the `Gemfile`'s test group:
 
@@ -106,7 +118,7 @@ if ENV["SCREENSHOTS"]
 end
 ```
 
-The `before(:suite)` hook runs after the project's own WebMock and VCR set-up, so its allow-list wins. Without it, they block Capybara's check that its server has started. On Minitest, put those two lines at the end of `test_helper.rb` instead, inside the same `if`.
+The `before(:suite)` hook runs after the project's own WebMock and VCR set-up, so its allow-list wins. Without it, they block Capybara's check that its server has started. On Minitest, put those lines at the end of `test_helper.rb` instead, inside the same `if`.
 
 The variables have distinct names on purpose. Projects often have their own `APP_HOST`, and reusing that name breaks the app's boot.
 
@@ -134,14 +146,20 @@ docker run -d --name shop-chrome --network shop_default --restart unless-stopped
 
 The container stays outside the project's compose file, because compose files often hard-code `container_name`s.
 
-**Assets.** Pages come out unstyled unless the CSS and JS are built for the test environment. Before each capture, run the project's build through the app container:
+**Assets**, for both routes. Pages come out unstyled unless the CSS and JS are built for the test environment. Before each capture, run the project's build through the app container:
 - `bin/rails tailwindcss:build` for `tailwindcss-rails`;
 - `bin/rails css:build javascript:build` for `cssbundling-rails` and `jsbundling-rails` (these need Node in the image);
-- nothing for plain Propshaft or Sprockets assets.
+- nothing for plain Propshaft or Sprockets assets, which compile on request.
 
 ### Readiness check
 
-The target is ready when all of these pass:
+**A browser in the app image** is ready when:
+
+1. The project registers a Cuprite driver.
+2. Chromium is in the app image. Run `command -v chromium chromium-browser google-chrome` through the app container: it should print a path.
+3. The asset build command (see "Assets" above) runs in the app container.
+
+**A browser container** is ready when:
 
 1. `Gemfile.lock` has a `cuprite (` entry.
 2. A support file registers the `:screenshots` driver, and the test helper loads it.
@@ -160,20 +178,28 @@ When the container exists but has stopped, starting it again (`docker start shop
 
 ### Capture
 
-1. **Write the journey** as `tmp/screenshots/<TICKET-ID>_spec.rb`. Rails gitignores `tmp/`, so it's never committed. Use one example per view, because each example must set its window size first: a resize carries over to the next example in the same browser session.
+1. **Write the journey** as `tmp/screenshots/<TICKET-ID>_spec.rb`. Rails gitignores `tmp/`, so it's never committed. Write it the way the project writes its own browser specs: a system spec with `driven_by`, or a feature spec tagged for its JavaScript driver (`:js`).
 
    ```ruby
    # One-off screenshots for ENG-123. Not committed.
    require "rails_helper"
 
    RSpec.describe "ENG-123 screenshots", type: :system do
-     before { driven_by :screenshots }
+     before { driven_by :screenshots }       # a browser in the app image: the project's Cuprite driver
 
-     { "desktop" => [1440, 900], "mobile" => [390, 844] }.each do |view, size|
+     { "desktop" => [1440, 900], "mobile" => [390, 844] }.each do |view, (width, height)|
        it view do
-         page.current_window.resize_to(*size)
          out = Rails.root.join("tmp/screenshots/out")
-         capture = ->(n, step) { page.save_screenshot(out.join("#{n}-#{step}-#{view}.png").to_s, full: true) }
+         viewport = lambda do |h|
+           page.driver.browser.page.command("Emulation.setDeviceMetricsOverride",
+                                            width: width, height: h, deviceScaleFactor: 1, mobile: false)
+         end
+         capture = lambda do |n, step|
+           viewport.(page.evaluate_script("document.documentElement.scrollHeight"))
+           page.save_screenshot(out.join("#{n}-#{step}-#{view}.png").to_s)
+           viewport.(height)
+         end
+         viewport.(height)
 
          admin = create(:user, :admin)
          create_list(:order, 2, user: admin)
@@ -191,21 +217,27 @@ When the container exists but has stopped, starting it again (`docker start shop
    end
    ```
 
+   - **Give the type explicitly** (`type: :system` or `type: :feature`). A spec outside `spec/` doesn't get its type from its folder, so without one, `page` is undefined.
+   - **Set the size through the viewport, not the window.** `viewport` uses the browser's own device emulation, so a view is exactly its width. Window resizing (`resize_to`, `driver.resize`) can't go below Chrome's minimum window width (about 500), and `full: true` resizes the window, undoing the emulation. `capture` makes the viewport as tall as the page, so the image shows all of it, then puts the height back.
+   - **One example per view**, each setting its viewport first: the size carries over to the next example in the same browser session.
    - `driven_by` in the spec overrides any project-wide `driven_by :rack_test` hook.
-   - Use the project's factories (or fixtures) and sign-in helpers, the way its own system specs do.
-   - On Minitest, the same journey goes in `tmp/screenshots/<TICKET-ID>_test.rb`, as a subclass of `ApplicationSystemTestCase` with `driven_by :screenshots`.
+   - Use the project's factories (or fixtures) and sign-in helpers, the way its own browser specs do.
+   - On Minitest, the same journey goes in `tmp/screenshots/<TICKET-ID>_test.rb`, as a subclass of `ApplicationSystemTestCase`.
    - **The before run** uses the same file, minus the steps the base code can't reach (a new screen, a factory or route the ticket adds). Those steps are recorded as new.
 
 2. **Build the assets**, as above.
-3. **Run the spec** with the screenshot settings. Turn coverage off: running one spec would overwrite the suite's coverage results.
+3. **Run the spec.** Turn coverage off: running one spec would overwrite the suite's coverage results. If the project's `.rspec` excludes a tag the spec uses (`--tag ~js` is common), pass it: `--tag js`.
 
-   ```bash
-   docker compose exec -e SCREENSHOTS=1 -e CHROME_WS_URL=ws://shop-chrome:3000 -e CAPYBARA_APP_HOST=web \
-     web bundle exec rspec tmp/screenshots/ENG-123_spec.rb
-   ```
-
-   - **With `exec`:** the app host is the service name.
-   - **With `run --rm`:** give the container a name with `--name shop-shots`, and use that name as the host.
+   - **A browser in the app image:** the project's usual test command, for example:
+     ```bash
+     docker compose run --rm web bundle exec rspec --tag js tmp/screenshots/ENG-123_spec.rb
+     ```
+   - **A browser container:** add the screenshot settings:
+     ```bash
+     docker compose exec -e SCREENSHOTS=1 -e CHROME_WS_URL=ws://shop-chrome:3000 -e CAPYBARA_APP_HOST=web \
+       web bundle exec rspec tmp/screenshots/ENG-123_spec.rb
+     ```
+     With `exec`, the app host is the service name. With `run --rm`, give the container a name with `--name shop-shots`, and use that name as the host.
    - **On a synced volume:** use the bind-mounted form from "Detect the setup", step 4.
 
 4. **Move the images** from `tmp/screenshots/out/` in the checkout to `media/before/` or `media/after/` in the media folder. Then empty `tmp/screenshots/out/`. Delete `tmp/screenshots/` once the PR is open.
@@ -285,15 +317,18 @@ Evilution needs two things the rest of the worker's commands don't (see "Paralle
 
 ### Screenshots (orchestrator, at preflight)
 
-Only when the `browser` target is ready and isn't opted out (see "Screenshots" above). Workers capture through a **screenshot prefix**: the mutation prefix (so coverage is off) with these inserted before the service name:
+Only when the `browser` target is ready and isn't opted out (see "Screenshots" above). Workers capture through a **screenshot prefix**, which starts from the mutation prefix, so coverage is off:
 
-```bash
---name <project>-shots-<ticket> -e SCREENSHOTS=1 -e CHROME_WS_URL=ws://<project>-chrome:3000 -e CAPYBARA_APP_HOST=<project>-shots-<ticket>
-```
+- **A browser in the app image:** the mutation prefix as it is. Each worker's container runs its own browser, so nothing more is needed to keep them apart.
+- **A browser container:** the mutation prefix, with these inserted before the service name:
 
-- **The container name** gives the Chromium container something to load pages from, and keeps parallel workers' containers apart. Write `<ticket>` in lowercase (`shop-shots-eng123`): hostnames don't take underscores.
-- **Workers share one Chromium container.** Each worker gets its own browser session, and its own test database, as usual.
-- **Run the readiness check** through the worker prefix, using `preflight` as the ticket.
+  ```bash
+  --name <project>-shots-<ticket> -e SCREENSHOTS=1 -e CHROME_WS_URL=ws://<project>-chrome:3000 -e CAPYBARA_APP_HOST=<project>-shots-<ticket>
+  ```
+
+  The container name gives the Chromium container something to load pages from, and keeps parallel workers' containers apart. Write `<ticket>` in lowercase (`shop-shots-eng123`): hostnames don't take underscores. Workers share the one Chromium container, each with its own browser session and, as usual, its own test database.
+
+Record which route the project uses, and any tag the spec has to pass because `.rspec` excludes it. Run the readiness check through the worker prefix, using `preflight` as the ticket.
 
 ### Preflight checks
 
@@ -314,7 +349,7 @@ What preflight records for this stack in `project.md`:
 - per-worker databases the orchestrator must create at claim and drop at clean-up, with the service each lives on;
 - the mutation prefix, the per-job database command and the job count (or `--jobs 1`), per "Mutation testing" above;
 - the files to copy into each worktree;
-- screenshots: `browser` ready, not ready (and why), or opted out. When it's ready, also record the screenshot prefix template, the Chromium container's name, and the asset build command.
+- screenshots: `browser` ready, not ready (and why), or opted out. When it's ready, also record the route (a browser in the app image, or a browser container), the screenshot prefix template, the asset build command, any tag to pass, and, for a browser container, the Chromium container's name.
 
 ### At claim
 
@@ -322,7 +357,7 @@ Once the orchestrator has created a ticket's worktree (or the epic review's, wit
 
 1. Copy in the files listed in `project.md`.
 2. Create any per-worker databases `project.md` lists for the orchestrator to create.
-3. If `browser` screenshots are ready, check the Chromium container is running, and `docker start` it if it isn't. If it won't start, leave the target out of this worker's prompt; the PR's skip line will say why.
+3. If `browser` screenshots are ready through a browser container, check the Chromium container is running, and `docker start` it if it isn't. If it won't start, leave the target out of this worker's prompt; the PR's skip line will say why.
 
 ### Worker prompt
 
@@ -339,7 +374,7 @@ For a `DATABASE_URL` project, add the development prefix after the test prefix, 
 When `browser` screenshots are ready, add:
 
 ```markdown
-Screenshots: browser (desktop, mobile). Build the assets with `<asset build command>`, then run the journey spec through this prefix, per "Screenshots" in the stack's environment.md:
+Screenshots: browser (desktop, mobile), <a browser in the app image | a browser container>. Build the assets with `<asset build command>`, then run the journey spec through this prefix<, passing --tag <tag>>, per "Screenshots" in the stack's environment.md:
 
 <screenshot prefix>
 ```
