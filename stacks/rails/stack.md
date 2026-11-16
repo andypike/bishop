@@ -23,6 +23,18 @@ What has to run when merged work is deployed, beyond deploying the code: databas
 - `bin/rails db:migrate` comes first in the feature's list, since other tasks usually depend on the schema.
 - In Phase 8, check the list against the diff: every migration and new rake task in it is listed.
 
+## Screenshots
+
+Per [`references/screenshots.md`](../../references/screenshots.md); setup and capture are in "Screenshots" in [`environment.md`](./environment.md).
+
+- **UI paths**: `app/views`, `app/components`, `app/helpers`, `app/presenters`, `app/assets/stylesheets`, `app/assets/tailwind`, `app/javascript`, `config/locales`.
+- **Targets**: `browser`, a headless Chromium, which captures two views:
+  - `desktop` at 1440×900;
+  - `mobile` at 390×844.
+
+  Each view captures the full page height.
+- **When not to capture**: nothing beyond the generic rules. A journey's data comes from factories (or fixtures) in the test database, so a screen needs nothing on any server.
+
 ## Architecture
 
 How `references/architecture.md` applies to a Rails feature.
