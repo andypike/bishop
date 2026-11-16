@@ -35,12 +35,15 @@ Checks 7–10 run for each repo in the `Stacks:` line, and report under the repo
 9. **Push access** — `gh auth status` succeeds, and `gh repo view <owner/repo> --json viewerPermission` reports `WRITE`, `MAINTAIN`, or `ADMIN`. ❌ otherwise.
 10. **Branch clean-up** — `gh repo view <owner/repo> --json deleteBranchOnMerge`. ⚠️ if off: merged ticket branches will pile up on GitHub; suggest turning on "Automatically delete head branches".
 
+Then, once for the machine, when any stack in `Stacks:` has a **Screenshots** section: `gh pr create --help` lists `--attach`. ⚠️ if not: no PR can carry screenshots until `gh` is upgraded, so every worker skips them. This check isn't numbered.
+
 ## Stack checks
 
 For each stack in the `Stacks:` line, run the "Preflight check" section of the stack's `quality-gates.md`, then the "Preflight checks" section of its `environment.md`, in that stack's repo checkout. Number them on from 11, in that order, and report them under the stack's name.
 
 - **Quality tools** — a missing tool is ❌, with two ways forward: add it, or **skip that tool for this project**. A test framework can't be skipped. Record skipped tools in the project state; the orchestrator tells every worker, and workers report them as skipped in the baseline and the PR rather than silently leaving them out. Auto mode can't ask for permission to add a dependency mid-ticket, which is why this is settled up front.
 - **One worker** — a stack check that says the project runs with one worker caps the project's maximum active workers at 1.
+- **Screenshots** — for a stack with a Screenshots section, read `~/.bishop/screenshots.json` (see "Opting out" in `references/screenshots.md`), then run the readiness check for each target that isn't opted out for the stack's repo. A target that isn't ready is ⚠️, never ❌: "set it up, or opt out". List the opted-out targets as ✅ opted out.
 
 ## Headless agent
 
@@ -54,7 +57,9 @@ On success, save the results to `~/.bishop/projects/<project-slug>/project.md`:
 - the project's stacks, from the `Stacks:` line, and for each one:
   - its GitHub repo (`owner/repo`) and the path of its main checkout;
   - what "Project state" in the stack's `environment.md` lists;
-  - quality tools skipped for this project
+  - quality tools skipped for this project;
+  - each screenshot target: ready, not ready (and why), or opted out
+- whether `gh` has `--attach`
 - the maximum active workers: the orchestrator's setting (default 2), or 1 if a stack check said so
 - that the GitHub automation was confirmed, and when
 

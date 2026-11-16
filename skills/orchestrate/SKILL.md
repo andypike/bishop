@@ -174,6 +174,8 @@ Run until you park the ticket or open the PR, then exit.
 
 Fill in the stack's block from that stack's part of `project.md`. If `project.md` lists skipped quality tools, add: `Skipped for this project by the developer: <tools>. Don't run them; report them as skipped in the baseline and the PR.` For a Rejected ticket, add to the ticket line: `This is rework after QA: the developer's comments since the last merge are the scope.`
 
+Screenshots come in the stack's block, which lists the ready targets and the reason for any that aren't. If `project.md` says `gh` has no `--attach`, replace them all with `Screenshots: skipped: gh can't attach images (upgrade gh)`.
+
 ## Step 6 — Report
 
 End the tick with one short summary: each ticket the orchestrator is tracking with its current state, then `running <n>/<max>`, how many tickets wait on a developer (🔴), and the pause end time if paused. Mention anything the tick couldn't do (a worktree git refused to remove, a ❌ preflight check).
