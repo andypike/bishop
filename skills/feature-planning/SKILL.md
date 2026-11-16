@@ -68,7 +68,7 @@ Propose a high-level list of tickets, following the slicing rules in `references
 - A one or two sentence outcome: what someone can do or see once it ships.
 - Which other proposed tickets it's blocked by, if any.
 
-When the feature spans stacks, a slice that needs both becomes **one ticket per stack** — a backend ticket (the endpoint, its data and rules) and an app ticket (the screens and the API calls), each a vertical slice within its own stack. Name each ticket's stack. The app ticket isn't blocked by the backend one: both build against the API contract designed in Phase 6.
+When the feature spans stacks, a slice that needs both becomes **one ticket per stack** — a backend ticket (the endpoint, its data and rules) and an app ticket (the screens and the API calls), each a vertical slice within its own stack. Name each ticket's stack. **The backend goes first**: the app ticket is blocked by the backend ticket whose endpoint it calls, and comes after it in the working order. Both build to the API contract designed in Phase 6. App tickets that call no new or changed endpoint (UI-only work, or existing endpoints) aren't blocked by the backend.
 
 Present them in a sensible working order, with the first unblocked slice being the thinnest end-to-end path through the feature. Then cross-check the list against the brief and the decision log: call out any requirement that doesn't map to a ticket, and any ticket that doesn't trace back to a requirement.
 
@@ -106,8 +106,8 @@ Before anything goes to Linear, review the tickets and the architecture as a who
 
 - **Coverage**: every in-scope requirement from the brief and decision log is covered by at least one ticket's acceptance criteria.
 - **Overlap**: no two tickets build the same thing.
-- **Ownership**: every component, table, column, and endpoint in the architecture is introduced by exactly one ticket, and every ticket that uses one is blocked by the ticket that introduces it — except app tickets using contract endpoints, which instead list them in their technical notes.
-- **Contract**: when the feature spans stacks, every endpoint an app ticket calls is in the API contract, introduced by a backend ticket.
+- **Ownership**: every component, table, column, and endpoint in the architecture is introduced by exactly one ticket, and every ticket that uses one is blocked by the ticket that introduces it.
+- **Contract**: when the feature spans stacks, every endpoint an app ticket calls is in the API contract, introduced by a backend ticket that the app ticket is blocked by, and earlier in the working order.
 - **Dependencies**: blocked-by links are only where one ticket genuinely needs another first, and there are no cycles.
 - **Out of scope**: everything deferred is written down, so it isn't lost.
 

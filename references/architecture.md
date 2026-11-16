@@ -18,16 +18,18 @@ Where the codebase doesn't follow the style guide in an area the feature touches
 
 ## Across stacks: the API contract
 
-When the feature spans stacks (a Rails backend and a React Native app, say), the **API contract** is the boundary between them: every endpoint the feature adds or changes, its request, its response, and its errors, exactly as sent over the wire. It's what lets a backend ticket and an app ticket be worked at the same time, in different repos, without either waiting for the other: the backend ticket builds the endpoint to the contract, and the app ticket builds against it, mocking the API in its tests.
+When the feature spans stacks (a Rails backend and a React Native app, say), the **API contract** is the boundary between them: every endpoint the feature adds or changes, its request, its response, and its errors, exactly as sent over the wire. The backend comes first: the backend ticket builds the endpoint to the contract, and the app ticket that calls it is built afterwards, against the contract and the endpoint as it was merged, mocking the API in its tests.
 
 - Each endpoint is **introduced by** exactly one backend ticket.
-- App tickets that use an endpoint are **not** blocked by the ticket that introduces it — the exception to the rule below. They list it under Technical notes instead, and their deployment tasks say the backend ticket has to be deployed first.
+- An app ticket that calls an endpoint is **blocked by** the backend ticket that introduces it, per the rule below. App tickets that call no new or changed endpoint aren't blocked by the backend and can be worked alongside it.
+- An app ticket's deployment tasks say the backend ticket has to be deployed first: merged into the backend's epic branch isn't the same as running where the app can reach it.
+- If the backend ticket changes an endpoint (an approved change, per [Changing it](#changing-it)), the contract is updated before that ticket finishes, so the app ticket starts from what was actually built.
 - Payloads use the backend's own field names (usually snake_case); the app maps them to its own types.
 - A change to the contract is a change to the architecture (see [Changing it](#changing-it)), and affects both sides: raise it rather than adjust one side.
 
 ## Ownership
 
-Every new component, table, column, and endpoint is **introduced by** exactly one ticket. A ticket that uses something another ticket introduces must be blocked by that ticket — except an app ticket using an endpoint from the API contract (see above). Check this against the tickets' `blockedBy` links: a missing link is a dependency the breakdown didn't see, and the fix is to add it or move the component into the earlier ticket.
+Every new component, table, column, and endpoint is **introduced by** exactly one ticket. A ticket that uses something another ticket introduces must be blocked by that ticket, across stacks too: an app ticket calling an endpoint is blocked by the backend ticket that introduces it. Check this against the tickets' `blockedBy` links: a missing link is a dependency the breakdown didn't see, and the fix is to add it or move the component into the earlier ticket.
 
 Files every ticket may edit — routes, locale files, the database schema, shared modules; the stack's `stack.md` lists them — get a convention instead of an owner: what each ticket adds there and how it's named, so their changes merge without conflict.
 
