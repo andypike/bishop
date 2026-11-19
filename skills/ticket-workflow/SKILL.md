@@ -46,7 +46,7 @@ Log before any command that could run for minutes, so the line's age shows how l
 
 ### Resuming in auto mode
 
-The orchestrator resumes a parked worker once its label is `agent:plan-approved` or `agent:answered`. Read every comment since your most recent agent parking comment — they are the developer's binding response — then continue from where you parked. If you start without your earlier context (a fresh session rather than a resumed one), rebuild it first from the ticket's agent comments (plan, decisions, assumptions), the branch's commits, and the state directory.
+The orchestrator resumes a parked worker once its label is `agent:plan-approved` or `agent:answered`. If your PR is already open, `agent:answered` means review feedback: follow "Addressing review feedback" below instead. Otherwise, read every comment since your most recent agent parking comment — they are the developer's binding response — then continue from where you parked. If you start without your earlier context (a fresh session rather than a resumed one), rebuild it first from the ticket's agent comments (plan, decisions, assumptions), the branch's commits, and the state directory.
 
 ### Resolving merge conflicts
 
@@ -66,6 +66,30 @@ The orchestrator also resumes a worker after its PR is open, when another ticket
 - `<file>` — <how the two changes were combined>
 
 Tests: <examples, pass/fail>. Re-ran <checks> on the resolved files: <results>.
+```
+
+### Addressing review feedback
+
+The orchestrator also resumes a worker after its PR is open when the developer asks for changes: they leave review comments on the PR or the ticket, then swap `agent:pr-open` to `agent:answered`. The resume prompt says so and points at `review-feedback.md` in the state directory, which the orchestrator fills with the PR's reviews, conversation and inline comments, and failing checks. The plan stays approved, and this run changes only what the feedback asks for:
+
+1. Log `Review feedback · started`, and swap the label to `agent:working`.
+2. Read `review-feedback.md` and every Linear comment since your last agent comment. Treat both as binding, like any developer response. If an item is ambiguous, contradicts an agreed decision, or would widen the ticket's scope, park per `references/escalation.md` rather than guess.
+3. Bring the epic in first, per "Bringing in the epic" in `references/git.md`, so fixes are made against current code.
+4. **Failing checks**: read the failure with `gh pr checks <ticket branch> --repo <owner/repo>`, then `gh run view <run ID> --repo <owner/repo> --log-failed`. Reproduce it locally through the stack's prefix before changing anything. CI's environment can differ from yours (database config, environment variables, missing services), so find the difference rather than skipping the test.
+5. Make each change Phase 5 style, with a test first where behaviour changes, and commit each item separately as `<TICKET-ID>: <what the review asked for>`.
+6. Run the full test suite, plus the Phase 6 checks for the files you touched. Fix failures Phase 5 style; after two attempts, park with `agent:gate-failed`.
+7. If the change alters what a screenshot shows, retake the after screenshots and replace them in the PR body with `gh pr edit`. Otherwise leave the PR body alone.
+8. Push the ticket branch. Post the comment below on the PR with `gh pr comment <ticket branch> --repo <owner/repo> --body-file <file>`, and the same text on the Linear ticket.
+9. Log `Review feedback · addressed`, and swap the label to `agent:pr-open`.
+
+```markdown
+**🤖 Agent — Review feedback addressed**
+
+- **<reviewer's point, in a few words>** (<file:line, or "review">) — <what changed>, in `<commit>`.
+- **Failing check: <check name>** — <the cause, and the difference between CI and local> — fixed in `<commit>`.
+- **Not changed: <point>** — <why, e.g. it conflicts with the approved plan>. <What the developer needs to decide.>
+
+Tests: <examples, pass/fail>. Re-ran <checks> on the changed files: <results>.
 ```
 
 ## Phase 1 — Ticket intake

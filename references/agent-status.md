@@ -40,8 +40,8 @@ A single-select label group named `agent` on the team. 🔴 marks the states whe
 | `agent:needs-input` 🔴 | worker | An escalation trigger fired; the question is in a comment. |
 | `agent:gate-failed` 🔴 | worker | The quality gate still fails after two retries; details are in a comment. |
 | `agent:error` 🔴 | orchestrator | The worker crashed twice; the log path is in a comment. |
-| `agent:answered` | developer | Developer has responded to a 🔴 state or a plan; resume the worker. |
-| `agent:pr-open` | worker | PR created and linked; developer reviews and merges. If the PR stops merging cleanly, the orchestrator swaps back to `agent:working` and the worker resolves it. |
+| `agent:answered` | developer | Developer has responded to a 🔴 state or a plan, or asked for changes on an open PR; resume the worker. |
+| `agent:pr-open` | worker | PR created and linked; developer reviews and merges. If the PR stops merging cleanly, the orchestrator swaps back to `agent:working` and the worker resolves it. To ask for changes, the developer swaps to `agent:answered` (see "Developer responses"). |
 
 ## The `stack` label group
 
@@ -68,8 +68,9 @@ The developer swaps the label in the Linear UI (picking a label from the group r
 
 - **Approve the plan**: swap to `agent:plan-approved`. Any comments added alongside are amendments to the plan.
 - **Ask for a revised plan, answer a question, or unblock a failed gate** (by guidance or by fixing the branch yourself): comment, then swap to `agent:answered`.
+- **Ask for changes on an open PR**, or to fix its failing CI: leave review comments on the PR (inline or as a review), Linear comments, or both, then swap `agent:pr-open` to `agent:answered`. The status stays In Review.
 
-The orchestrator resumes any ticket labelled `agent:plan-approved` or `agent:answered`. On resume, the worker reads every comment posted since it parked; those comments are binding.
+The orchestrator resumes any ticket labelled `agent:plan-approved` or `agent:answered`. On resume, the worker reads every comment posted since it parked; those comments are binding. For a ticket whose PR is already open, the orchestrator first gathers the PR's review comments and failing checks into the worker's state directory, because workers can't read inline review comments themselves.
 
 ## Clean-up
 
