@@ -100,7 +100,7 @@ For every ticket folder with a `pid` file, check the process with `kill -0 <pid>
 
 - **Usage limit** — the run ended in error and its `result` or stderr mentions a usage or rate limit. Not the worker's fault: don't count it as a crash. Pause the project (see [Usage limits](#usage-limits)) and mark the ticket in `worker.md` to resume once the pause ends.
 - **Parked** — the label is `agent:awaiting-approval`, `agent:needs-input`, or `agent:gate-failed`. The worker stopped on purpose; nothing to do until the developer responds.
-- **Finished** — the label is `agent:pr-open`. Post the token-usage comment (see [Comments](#comments)) and mark the ticket finished in `worker.md`. If `worker.md` marks it as resolving conflicts, clear that mark instead: the token comment was posted when the PR first opened.
+- **Finished** — the label is `agent:pr-open`. Post the token-usage comment (see [Comments](#comments)) and mark the ticket finished in `worker.md`. If `worker.md` marks it as resolving conflicts or addressing review feedback, clear that mark instead: the token comment was posted when the PR first opened.
 - **Crashed** — anything else: the label is still `agent:planning` or `agent:working`, or the run JSON is empty or ends in an error. Add one to the crash count in `worker.md`. After the first crash, mark the ticket to resume. After the second, post the error comment and swap the label to `agent:error`; the developer takes it from there.
 
 ## Step 3 — Clean up
@@ -119,7 +119,7 @@ A ticket cleaned up after QA can come back as Rejected and be claimed again; tha
 
 ## Step 4 — Resume
 
-Skip this step while the project is paused. A ticket needs resuming when its label is `agent:plan-approved` or `agent:answered` (the developer has responded), when step 2 marked it after a crash or a usage limit, or when its open PR has merge conflicts.
+Skip this step while the project is paused. A ticket needs resuming when its label is `agent:plan-approved` or `agent:answered` (the developer has responded to a plan or question, or asked for changes on an open PR), when step 2 marked it after a crash or a usage limit, or when its open PR has merge conflicts.
 
 **Finding conflicted PRs** — for each ticket labelled `agent:pr-open` and still In Review, check whether its PR can merge, running this alone:
 
@@ -129,13 +129,30 @@ gh pr view <ticket branch> --repo <owner/repo> --json mergeable -q .mergeable
 
 `CONFLICTING` means another ticket merged first and the PR can no longer merge into the epic: it needs resuming. `MERGEABLE` needs nothing. `UNKNOWN` means GitHub hasn't worked it out yet; check again next tick. Swap the label to `agent:working` only when you start its worker (below), and mark `worker.md` as resolving conflicts.
 
+**Review feedback** — a ticket labelled `agent:answered` whose `worker.md` marks it finished (its PR is already open) is review feedback, not a reply to a parked question. Before resuming it, gather the feedback, because workers can't call `gh api`. Run each command alone:
+
+```bash
+gh pr view <ticket branch> --repo <owner/repo> --json number,url,reviews,comments
+gh api repos/<owner/repo>/pulls/<number>/comments
+gh pr checks <ticket branch> --repo <owner/repo>
+```
+
+Write them to `<ticket state dir>/review-feedback.md`, under three headings:
+
+- **Reviews** — each review's state and body.
+- **Comments** — the PR's conversation comments and inline comments not written by the agent, each with author, file and line, and its `id` (for a threaded reply).
+- **Failing checks** — each failed check's name and link, or "All checks passing".
+
+Skip comments the worker has already answered, using the date of its last "Review feedback addressed" comment on the PR. Mark `worker.md` as addressing review feedback.
+
 For each ticket needing a resume, while a slot is free:
 
 1. Write `resume-prompt.md` for the reason:
    - **Developer responded**: `<TICKET-ID>'s label is now <label>. Resume in auto mode per the ticket-workflow skill's "Resuming in auto mode" section: read every comment posted since your last parking comment, apply them, and continue.`
+   - **Review feedback**: `<TICKET-ID>'s label is now agent:answered: the developer has asked for changes on its open PR. Follow the ticket-workflow skill's "Addressing review feedback" section. The PR's review comments and checks are in <ticket state dir>/review-feedback.md.`
    - **After a crash or usage limit**: `Your previous run stopped before finishing (<reason>). Resume in auto mode where you left off: check the branch's commits and your comments on the ticket for what's already done, then continue.`
    - **Merge conflicts**: `<TICKET-ID>'s PR no longer merges into <epic branch>: other work merged first and conflicts with it. Follow the ticket-workflow skill's "Resolving merge conflicts" section.` Swap the label from `agent:pr-open` to `agent:working` before starting the worker.
-2. Append `Resumed · <label, crash / usage limit, or merge conflicts>` to `progress.md`.
+2. Append `Resumed · <label, review feedback, crash / usage limit, or merge conflicts>` to `progress.md`.
 3. Start the worker with its session ID.
 
 If the session can't be resumed (the run ends at once with an error saying the conversation wasn't found), start a fresh worker from `prompt.md` instead, with this line added at the top: `You are resuming work on this ticket in a fresh session: rebuild your context first, per the skill's "Resuming in auto mode" section.`
@@ -173,6 +190,8 @@ Run until you park the ticket or open the PR, then exit.
 ```
 
 Fill in the stack's block from that stack's part of `project.md`. If `project.md` lists skipped quality tools, add: `Skipped for this project by the developer: <tools>. Don't run them; report them as skipped in the baseline and the PR.` For a Rejected ticket, add to the ticket line: `This is rework after QA: the developer's comments since the last merge are the scope.`
+
+Screenshots come in the stack's block, which lists the ready targets and the reason for any that aren't. If `project.md` says `gh` has no `--attach`, replace them all with `Screenshots: skipped: gh can't attach images (upgrade gh)`.
 
 ## Step 6 — Report
 

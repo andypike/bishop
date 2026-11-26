@@ -19,6 +19,10 @@
       "Bash(gh pr create *)",
       "Bash(gh pr view *)",
       "Bash(gh pr list *)",
+      "Bash(gh pr edit *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh pr comment *)",
+      "Bash(gh run view *)",
       "mcp__claude_ai_Linear__get_issue",
       "mcp__claude_ai_Linear__list_issues",
       "mcp__claude_ai_Linear__list_comments",
@@ -28,7 +32,8 @@
       "mcp__claude_ai_Linear__get_document",
       "mcp__claude_ai_Linear__save_document",
       "mcp__claude_ai_Linear__list_documents",
-      "mcp__claude_ai_Linear__get_project"
+      "mcp__claude_ai_Linear__get_project",
+      "mcp__claude_ai_Linear__prepare_file_upload"
     ],
     "deny": [
       "Bash(git push --force *)",
@@ -70,6 +75,10 @@
       "Bash(gh pr create *--base=master*)",
       "Bash(gh pr create *-B main*)",
       "Bash(gh pr create *-B master*)",
+      "Bash(gh pr edit *--base*)",
+      "Bash(gh pr edit *-B *)",
+      "Bash(gh pr edit *--add-assignee*)",
+      "Bash(gh pr edit *--add-reviewer*)",
       "Bash(git checkout *)",
       "Bash(git switch *)",
       "Bash(git reset --hard *)",
@@ -83,6 +92,11 @@
       "Bash(docker volume rm *)",
       "Bash(docker system prune*)",
       "Bash(gh pr merge *)",
+      "Bash(gh pr comment *--edit-last*)",
+      "Bash(gh pr comment *--delete-last*)",
+      "Bash(gh run rerun *)",
+      "Bash(gh run cancel *)",
+      "Bash(gh run delete *)",
       "Bash(gh api *)",
       "Bash(gh repo *)",
       "mcp__claude_ai_Linear__delete_comment",
@@ -135,7 +149,8 @@
         "/var/run/docker.sock",
         "~/.orbstack/run/docker.sock",
         "~/.docker/run/docker.sock"
-      ]
+      ],
+      "allowedDomains": ["storage.googleapis.com"]
     }
   }
 }
